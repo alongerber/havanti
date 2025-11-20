@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+
+<html lang="he" dir="rtl">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>הבנתי! - מסביר חכם לילדים</title>
+
+    <style>
+
+        * {
+
+            margin: 0;
+
+            padding: 0;
+
+            box-sizing: border-box;
+
+        }
+
+        
+
+        body {
+
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+            background: #0a0a0a;
+
+            color: white;
+
+            min-height: 100vh;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            padding: 20px;
+
+            direction: rtl;
+
+        }
+
+        
+
+        body::before {
+
+            content: '';
+
+            position: fixed;
+
+            top: 0;
+
+            left: 0;
+
+            right: 0;
+
+            bottom: 0;
+
+            background: radial-gradient(circle at 20% 50%, rgba(139, 92, 246, 0.3) 0%, transparent 50%),
+
+                        radial-gradient(circle at 80% 50%, rgba(236, 72, 153, 0.3) 0%, transparent 50%);
+
+            z-index: -1;
+
+        }
+
+        
+
+        .container {
+
+            width: 100%;
+
+            max-width: 500px;
+
+            background: rgba(18, 18, 18, 0.9);
+
+            backdrop-filter: blur(20px);
+
+            border: 1px solid rgba(255, 255, 255, 0.1);
+
+            border-radius: 24px;
+
+            padding: 40px;
+
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+
+        }
+
+        
+
+        h1 {
+
+            font-size: 2.5rem;
+
+            text-align: center;
+
+            margin-bottom: 8px;
+
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+            -webkit-background-clip: text;
+
+            -webkit-text-fill-color: transparent;
+
+            font-weight: 800;
+
+        }
+
+        
+
+        .subtitle {
+
+            text-align: center;
+
+            color: rgba(255, 255, 255, 0.7);
+
+            margin-bottom: 32px;
+
+            font-size: 1.1rem;
+
+        }
+
+        
+
+        .step {
+
+            animation: slideIn 0.4s ease;
+
+        }
+
+        
+
+        .step.hidden {
+
+            display: none;
+
+        }
+
+        
+
+        @keyframes slideIn {
+
+            from {
+
+                opacity: 0;
+
+                transform: translateY(20px);
+
+            }
+
+            to {
+
+                opacity: 1;
+
+                transform: translateY(0);
+
+            }
+
+        }
+
+        
+
+        h2 {
+
+            font-size: 1.5rem;
+
+            margin-bottom: 24px;
+
+            color: rgba(255, 255, 255, 0.95);
+
+        }
+
+        
+
+        .grade-buttons {
+
+            display: grid;
+
+            grid-template-columns: repeat(3, 1fr);
+
+            gap: 16px;
+
+        }
+
+        
+
+        button {
+
+            padding: 20px;
+
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(139, 92, 246, 0.1));
+
+            border: 1px solid rgba(139, 92, 246, 0.3);
+
+            border-radius: 16px;
+
+            color: white;
+
+            font-size: 1.2rem;
+
+            font-weight: 600;
+
+            cursor: pointer;
+
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+        }
+
+        
+
+        button:hover {
+
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(139, 92, 246, 0.2));
+
+            border-color: #8b5cf6;
+
+            transform: translateY(-2px);
+
+            box-shadow: 0 10px 25px -5px rgba(139, 92, 246, 0.3);
+
+        }
+
+        
+
+        .topic-buttons {
+
+            display: grid;
+
+            grid-template-columns: repeat(2, 1fr);
+
+            gap: 12px;
+
+            max-height: 400px;
+
+            overflow-y: auto;
+
+            padding-right: 8px;
+
+        }
+
+        
+
+        .topic-buttons::-webkit-scrollbar {
+
+            width: 6px;
+
+        }
+
+        
+
+        .topic-buttons::-webkit-scrollbar-track {
+
+            background: rgba(255, 255, 255, 0.05);
+
+            border-radius: 3px;
+
+        }
+
+        
+
+        .topic-buttons::-webkit-scrollbar-thumb {
+
+            background: rgba(139, 92, 246, 0.3);
+
+            border-radius: 3px;
+
+        }
+
+        
+
+        .topic-btn {
+
+            padding: 16px;
+
+            font-size: 1rem;
+
+        }
+
+        
+
+        .explanation-box {
+
+            background: rgba(139, 92, 246, 0.1);
+
+            border: 1px solid rgba(139, 92, 246, 0.2);
+
+            border-radius: 16px;
+
+            padding: 24px;
+
+            margin-bottom: 24px;
+
+            font-size: 1.15rem;
+
+            line-height: 1.8;
+
+            color: rgba(255, 255, 255, 0.95);
+
+        }
+
+        
+
+        .explanation-box h3 {
+
+            color: #a78bfa;
+
+            margin-bottom: 16px;
+
+            font-size: 1.3rem;
+
+        }
+
+        
+
+        .visual-example {
+
+            background: rgba(0, 0, 0, 0.3);
+
+            border-radius: 12px;
+
+            padding: 20px;
+
+            margin: 16px 0;
+
+            text-align: center;
+
+            font-size: 2rem;
+
+            letter-spacing: 8px;
+
+        }
+
+        
+
+        .retry-btn {
+
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+
+            width: 100%;
+
+            margin-bottom: 12px;
+
+        }
+
+        
+
+        .start-over {
+
+            background: rgba(255, 255, 255, 0.1);
+
+            width: 100%;
+
+        }
+
+        
+
+        .loading {
+
+            text-align: center;
+
+            padding: 40px;
+
+            color: rgba(255, 255, 255, 0.5);
+
+        }
+
+        
+
+        .loading-spinner {
+
+            width: 40px;
+
+            height: 40px;
+
+            border: 3px solid rgba(139, 92, 246, 0.2);
+
+            border-top-color: #8b5cf6;
+
+            border-radius: 50%;
+
+            margin: 0 auto 16px;
+
+            animation: spin 0.8s linear infinite;
+
+        }
+
+        
+
+        @keyframes spin {
+
+            to { transform: rotate(360deg); }
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>🎯 הבנתי!</h1>
+
+        <p class="subtitle">הסברים שעובדים - עד שתבין</p>
+
+        
+
+        <div id="gradeStep" class="step">
+
+            <h2>באיזו כיתה אתה?</h2>
+
+            <div class="grade-buttons">
+
+                <button onclick="selectGrade('1-2')">א׳-ב׳</button>
+
+                <button onclick="selectGrade('3-4')">ג׳-ד׳</button>
+
+                <button onclick="selectGrade('5-6')">ה׳-ו׳</button>
+
+            </div>
+
+        </div>
+
+        
+
+        <div id="topicStep" class="step hidden">
+
+            <h2>בחר נושא:</h2>
+
+            <div id="topicButtons" class="topic-buttons"></div>
+
+        </div>
+
+        
+
+        <div id="resultStep" class="step hidden">
+
+            <div id="explanation" class="explanation-box"></div>
+
+            <button onclick="explainDifferently()" class="retry-btn">
+
+                🔄 הסבר אחרת
+
+            </button>
+
+            <button onclick="startOver()" class="start-over">
+
+                📚 נושא חדש
+
+            </button>
+
+        </div>
+
+        
+
+        <div id="loadingStep" class="step hidden">
+
+            <div class="loading">
+
+                <div class="loading-spinner"></div>
+
+                <p>מכין הסבר מיוחד בשבילך...</p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    
+
+    <script src="app.js"></script>
+
+</body>
+
+</html>
+
