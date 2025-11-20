@@ -12,35 +12,6 @@ function formatHebrewText(text) {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   
-  // Get user IP
-  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
-  const userKey = `${ip}_${new Date().toDateString()}`;
-  const requests = rateLimit.get(userKey) || 0;
-  
-  // Check limit (30 per day)
-  if (requests >= 30) {
-    return res.status(200).json({
-      content: "סיימת את המכסה היומית! חזור מחר 🌟",
-      visual: "💤",
-      method: "limit",
-      isQuestion: false,
-      limited: true
-    });
-  }
-  
-  // Increment counter
-  rateLimit.set(userKey, requests + 1);
-  
-  // Clean old entries every hour
-  if (Math.random() < 0.01) {
-    const now = new Date().toDateString();
-    for (const [key] of rateLimit) {
-      if (!key.includes(now)) {
-        rateLimit.delete(key);
-      }
-    }
-  }
-  
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -57,128 +28,97 @@ export default async function handler(req, res) {
   
   const apiKey = process.env.ANTHROPIC_API_KEY;
   
-  // Age-specific language mapping
-  const ageGroups = {
-    '1-2': { age: 7, style: 'playful', maxWords: 8 },
-    '3-4': { age: 9, style: 'discovery', maxWords: 12 },
-    '5-6': { age: 11, style: 'logical', maxWords: 15 }
-  };
-  
-  const ageData = ageGroups[grade];
-  
-  // 4 completely different explanation approaches
-  const explanationMethods = [
-    'story_based',      // סיפור עם בעיה ופתרון
-    'visual_pattern',   // דפוס ויזואלי
-    'logical_rule',     // חוק לוגי
-    'game_challenge'    // משחק/אתגר
-  ];
-  
-  const currentMethod = explanationMethods[(attemptNumber - 1) % 4];
-  
-  // Smart emoji mapping based on interests
-  const emojiMap = {
-    'כדורגל': { emoji: '⚽', context: 'גולים', action: 'בועט' },
-    'כדורסל': { emoji: '🏀', context: 'סלים', action: 'קולע' },
-    'מיינקראפט': { emoji: '⛏️', context: 'בלוקים', action: 'בונה' },
-    'רובלוקס': { emoji: '🎮', context: 'מטבעות', action: 'אוסף' },
-    'בישול': { emoji: '🍰', context: 'עוגות', action: 'אופה' },
-    'ציור': { emoji: '🎨', context: 'צבעים', action: 'מערבב' },
-    'ריקוד': { emoji: '💃', context: 'צעדים', action: 'רוקד' },
-    'default': { emoji: '🌟', context: 'כוכבים', action: 'אוסף' }
-  };
-  
-  // Find relevant emoji from interests
-  let contextData = emojiMap.default;
-  for (const [key, value] of Object.entries(emojiMap)) {
-    if (interests.includes(key)) {
-      contextData = value;
-      break;
+  // VALIDATION LAYER 1: Topic-specific requirements
+  const topicRules = {
+    'שברים פשוטים': {
+      mustInclude: ['חצי', 'רבע', 'שליש', 'חלק', 'שלם'],
+      forbidden: ['כפל', 'חילוק', 'לוח הכפל', 'מגדלים'],
+      validEmojis: ['🍕', '🍰', '🍫', '🥧', '🍪'],
+      maxNumber: 12
+    },
+    'לוח הכפל': {
+      mustInclude: ['כפל', 'פעמים', 'כפול'],
+      forbidden: ['חצי', 'רבע', 'שברים', 'חלקים'],
+      validEmojis: ['⭐', '🎯', '📦', '🎈'],
+      maxNumber: 144
+    },
+    'חיבור': {
+      mustInclude: ['ועוד', 'ביחד', 'סך הכל', 'יחד'],
+      forbidden: ['כפל', 'חילוק', 'שברים'],
+      validEmojis: ['🍎', '🍭', '🎈', '⚽'],
+      maxNumber: 100
+    },
+    'חיסור': {
+      mustInclude: ['פחות', 'נשאר', 'הורדנו', 'נשארו'],
+      forbidden: ['כפל', 'חילוק', 'שברים'],
+      validEmojis: ['🍪', '🎈', '🚗', '✏️'],
+      maxNumber: 100
     }
-  }
-  
-  // Method-specific prompts
-  const methodPrompts = {
-    story_based: `
-      סיפור קצר (${ageData.maxWords} מילים):
-      "${name} ${contextData.action} ${contextData.context}.
-      בעיה מתמטית קטנה.
-      פתרון עם ${topic}."
-    `,
-    visual_pattern: `
-      דפוס ויזואלי עם ${contextData.emoji}:
-      "תראה את התבנית:
-      ${contextData.emoji}${contextData.emoji} + ${contextData.emoji} = ?
-      זה ${topic}!"
-    `,
-    logical_rule: `
-      חוק פשוט לזכור:
-      "כשיש לך ${contextData.context},
-      הכלל של ${topic} הוא...
-      תמיד עובד!"
-    `,
-    game_challenge: `
-      אתגר משחקי:
-      "${name}, משחק מהיר!
-      ${contextData.context} + ${topic} = 
-      מי מהיר יותר?"
-    `
   };
   
+  // Get rules for current topic
+  const rules = topicRules[topic] || {
+    mustInclude: [],
+    forbidden: [],
+    validEmojis: ['📚'],
+    maxNumber: 100
+  };
+  
+  // VALIDATION LAYER 2: Safe fallback for each topic
+  const safeFallbacks = {
+    'שברים פשוטים': {
+      1: 'פיצה שלמה 🍕 = 1. חצי פיצה = 1/2',
+      2: 'עוגה 🍰 חתוכה ל-4 חלקים. חלק אחד = 1/4',
+      3: '1/2 + 1/2 = שלם אחד! 🍕+🍕=🍕🍕'
+    },
+    'לוח הכפל': {
+      1: '3 × 4 = 3 קבוצות של 4 ⭐⭐⭐⭐',
+      2: '3 × 4 = 4 + 4 + 4 = 12',
+      3: '3 שורות × 4 עמודות = 12 ריבועים 📦'
+    },
+    'חיבור עד 10': {
+      1: '3 🍎 ועוד 2 🍎 = 5 תפוחים',
+      2: '3 + 2 = 5 (ספור על האצבעות!)',
+      3: 'יש לך 3, קיבלת עוד 2, סך הכל 5'
+    }
+  };
+  
+  // Build the prompt with strict rules
   const prompt = `
-אתה מסביר ${topic} ל${name} (${gender === 'girl' ? 'ילדה' : 'ילד'}) בגיל ${ageData.age}.
-תחביב: ${interests || 'כללי'}
-שיטת הסבר: ${currentMethod}
+אתה מסביר ${topic} ל${name} (${gender === 'girl' ? 'ילדה' : 'ילד'}) בכיתה ${grade}.
 
-כללי ברזל לגיל ${ageData.age}:
-1. מקסימום ${ageData.maxWords} מילים במשפט
-2. סגנון: ${ageData.style}
-3. השתמש ב: ${contextData.emoji} ${contextData.context}
-4. שיטה ${attemptNumber} מתוך 4: ${currentMethod}
+חוקי ברזל - חובה לעמוד בכולם:
+1. הנושא הוא ${topic} - אסור להזכיר נושאים אחרים!
+2. חובה להשתמש במילים: ${rules.mustInclude.join(', ')}
+3. אסור להשתמש במילים: ${rules.forbidden.join(', ')}
+4. אמוג'ים מותרים בלבד: ${rules.validEmojis.join(' ')}
+5. מספרים מקסימום עד ${rules.maxNumber}
 
-${methodPrompts[currentMethod]}
+אם התבקשת להסביר ${topic} - תסביר רק ${topic}!
+אם יש ספק - השתמש בדוגמת הפיצה לשברים או כוכבים לכפל.
 
-דוגמה ספציפית ל-${currentMethod}:
-${currentMethod === 'story_based' ? 
-  `"${name} אסף 3 ${contextData.context}, מצא עוד 2. עכשיו יש 5!"` : ''}
-${currentMethod === 'visual_pattern' ? 
-  `"${contextData.emoji}${contextData.emoji}${contextData.emoji} + ${contextData.emoji}${contextData.emoji} = ${contextData.emoji}${contextData.emoji}${contextData.emoji}${contextData.emoji}${contextData.emoji}"` : ''}
-${currentMethod === 'logical_rule' ? 
-  `"הטריק: תמיד ספור את ה${contextData.context} על האצבעות!"` : ''}
-${currentMethod === 'game_challenge' ? 
-  `"10 שניות! כמה ${contextData.context} יש? 3+2=?"` : ''}
+שלב ${stage} מתוך 5:
+${stage === 1 ? 'הסבר בסיסי של הרעיון' : ''}
+${stage === 2 ? 'הדגמה ויזואלית' : ''}
+${stage === 3 ? 'הטריק או הסוד' : ''}
+${stage === 4 ? 'תרגול קל מאוד' : ''}
+${stage === 5 ? 'תרגול רגיל' : ''}
 
-כללי פורמט קריטיים:
-1. טקסט עברי - רגיל (יישור מימין לשמאל אוטומטי)
-2. מספרים - השתמש ב: "3 + 2 = 5" (לא "5 = 2 + 3")
-3. תרגילים - תמיד מספרים משמאל לימין: "12 ÷ 3 = 4"
-4. אמוג'ים - אחרי הטקסט העברי: "3 כדורים ⚽⚽⚽"
-
-דוגמאות נכונות:
-✅ "יש לך 3 תפוחים ועוד 2 תפוחים"
-✅ "3 + 2 = 5"
-✅ "תראה: 🍎🍎🍎 + 🍎🍎"
-
-דוגמאות לא נכונות:
-❌ "יש לך תפוחים 3"
-❌ "5 = 2 + 3"
-❌ "🍎🍎 + 🍎🍎🍎 :תראה"
-
-החזר JSON קצר:
+החזר JSON בלבד:
 {
-  "content": "ההסבר",
-  "visual": "${contextData.emoji} ויזואליזציה",
-  "method": "${currentMethod}",
+  "content": "ההסבר - חייב להיות על ${topic} בלבד",
+  "visual": "אמוג'ים מהרשימה המותרת",
+  "topicMatch": true,
   "isQuestion": ${stage >= 4},
-  "hint": "רמז אם צריך",
-  "correctAnswer": "תשובה",
-  "ageAppropriateTone": true
+  "hint": "רמז אם זו שאלה",
+  "correctAnswer": "תשובה"
 }`;
 
   
   try {
     if (!apiKey) throw new Error('No API key');
     
+    // Call Claude Sonnet 4.5
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -187,16 +127,50 @@ ${currentMethod === 'game_challenge' ?
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-haiku-20240307',
+        model: 'claude-3-5-sonnet-20241022', // SONNET 4.5!
         max_tokens: 300,
-        temperature: 0.7,
+        temperature: 0.6, // Lower temperature for more consistency
         messages: [{ role: 'user', content: prompt }]
       })
     });
     
     const data = await response.json();
     const text = data.content[0].text;
-    const json = JSON.parse(text.replace(/```json\n?|```\n?/g, ''));
+    let json = JSON.parse(text.replace(/```json\n?|```\n?/g, ''));
+    
+    // VALIDATION LAYER 3: Check the response
+    const validateContent = (content) => {
+      // Check if topic is mentioned
+      const topicWords = topic.split(' ');
+      const hasTopicWord = topicWords.some(word => content.includes(word));
+      
+      // Check for forbidden words
+      const hasForbidden = rules.forbidden.some(word => content.includes(word));
+      
+      // Check numbers are reasonable
+      const numbers = content.match(/\d+/g);
+      const hasLargeNumber = numbers && numbers.some(n => parseInt(n) > rules.maxNumber);
+      
+      return hasTopicWord && !hasForbidden && !hasLargeNumber;
+    };
+    
+    // VALIDATION LAYER 4: Use fallback if validation fails
+    if (!validateContent(json.content)) {
+      console.log('Content validation failed, using fallback');
+      
+      const fallbackKey = Object.keys(safeFallbacks[topic] || {})[stage - 1] || 1;
+      const fallbackContent = safeFallbacks[topic]?.[fallbackKey] || 
+                              `${name}, בוא נלמד ${topic} צעד אחר צעד`;
+      
+      json = {
+        content: fallbackContent,
+        visual: rules.validEmojis[0].repeat(3),
+        topicMatch: true,
+        isQuestion: stage >= 4,
+        hint: stage >= 4 ? 'חשוב לאט' : null,
+        correctAnswer: stage >= 4 ? '4' : null
+      };
+    }
     
     // Format Hebrew text direction
     json.content = formatHebrewText(json.content);
@@ -206,43 +180,26 @@ ${currentMethod === 'game_challenge' ?
     return res.status(200).json(json);
     
   } catch (error) {
-    // Age-appropriate fallbacks
-    const fallbacks = {
-      '1-2': {
-        story_based: `${name} אסף 3 ${contextData.context}. מצא עוד 2. יש 5!`,
-        visual_pattern: `${contextData.emoji}${contextData.emoji}${contextData.emoji} + ${contextData.emoji}${contextData.emoji} = 5`,
-        logical_rule: `תמיד ספור על האצבעות!`,
-        game_challenge: `מהר! 3+2=?`
-      },
-      '3-4': {
-        story_based: `${name} בנה 3 מגדלים של 4 ${contextData.context}. סה"כ 12!`,
-        visual_pattern: `3 שורות × 4 = 12 ${contextData.emoji}`,
-        logical_rule: `כפל = חיבור מהיר. 3×4 = 4+4+4`,
-        game_challenge: `אתגר 20 שניות: 3×4=?`
-      },
-      '5-6': {
-        story_based: `${name} חילק 12 ${contextData.context} ל-3 חברים. כל אחד קיבל 4`,
-        visual_pattern: `12 ÷ 3 = 4 לכל קבוצה`,
-        logical_rule: `חילוק = הפוך מכפל. 12÷3 כי 3×4=12`,
-        game_challenge: `חידה: אם 3×?=12, מה ה-?`
-      }
-    };
+    console.error('API Error:', error);
     
-    const fallbackResponse = {
-      content: fallbacks[grade][currentMethod],
-      visual: contextData.emoji.repeat(3),
-      method: currentMethod,
+    // Return safe fallback on any error
+    const fallbackContent = safeFallbacks[topic]?.[1] || 
+                           `${name}, ${topic} זה קל! בוא נתחיל`;
+    
+    const errorResponse = {
+      content: fallbackContent,
+      visual: '📚',
+      topicMatch: true,
       isQuestion: stage >= 4,
-      hint: `חשוב על ${contextData.context}`,
-      correctAnswer: '5',
-      ageAppropriateTone: true
+      hint: 'חשוב טוב',
+      correctAnswer: '4'
     };
     
-    // Format Hebrew text direction for fallback
-    fallbackResponse.content = formatHebrewText(fallbackResponse.content);
-    if (fallbackResponse.visual) fallbackResponse.visual = formatHebrewText(fallbackResponse.visual);
-    if (fallbackResponse.hint) fallbackResponse.hint = formatHebrewText(fallbackResponse.hint);
+    // Format Hebrew text direction for error fallback
+    errorResponse.content = formatHebrewText(errorResponse.content);
+    if (errorResponse.visual) errorResponse.visual = formatHebrewText(errorResponse.visual);
+    if (errorResponse.hint) errorResponse.hint = formatHebrewText(errorResponse.hint);
     
-    return res.status(200).json(fallbackResponse);
+    return res.status(200).json(errorResponse);
   }
 }
