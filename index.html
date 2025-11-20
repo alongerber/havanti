@@ -476,6 +476,12 @@
 
             line-height: 1.8;
 
+            direction: rtl;
+
+            text-align: right;
+
+            unicode-bidi: embed;
+
         }
 
         
@@ -495,6 +501,32 @@
             font-size: 2rem;
 
             letter-spacing: 8px;
+
+            direction: ltr;
+
+            unicode-bidi: isolate;
+
+        }
+
+        
+
+        /* Numbers stay LTR */
+
+        .math-expression {
+
+            direction: ltr;
+
+            display: inline-block;
+
+            font-family: 'Courier New', monospace;
+
+            background: rgba(139, 92, 246, 0.1);
+
+            padding: 2px 8px;
+
+            border-radius: 4px;
+
+            margin: 0 4px;
 
         }
 
@@ -519,6 +551,8 @@
             text-align: center;
 
             margin: 20px 0;
+
+            direction: ltr;
 
         }
 

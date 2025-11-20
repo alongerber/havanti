@@ -22,6 +22,20 @@ let userData = {
 
 
 
+// Explanation method tracking
+
+let explanationHistory = {
+
+    methods: [],
+
+    successful: [],
+
+    currentMethod: 0
+
+};
+
+
+
 // Topics by grade
 
 const topics = {
@@ -270,6 +284,12 @@ async function startLearning() {
 
     
 
+    // Track which method we're using
+
+    explanationHistory.currentMethod = (userData.explanationCount % 4) + 1;
+
+    
+
     try {
 
         const response = await fetch('/api/explain', {
@@ -292,7 +312,7 @@ async function startLearning() {
 
                 stage: userData.currentStage,
 
-                attemptNumber: userData.explanationCount + 1
+                attemptNumber: explanationHistory.currentMethod
 
             })
 
@@ -301,6 +321,32 @@ async function startLearning() {
         
 
         const data = await response.json();
+
+        
+
+        // Show method indicator
+
+        if (data.method) {
+
+            const methodNames = {
+
+                'story_based': '📖 סיפור',
+
+                'visual_pattern': '👁️ תמונה',
+
+                'logical_rule': '🧠 חוק',
+
+                'game_challenge': '🎮 משחק'
+
+            };
+
+            
+
+            data.methodDisplay = methodNames[data.method] || '';
+
+        }
+
+        
 
         displayContent(data);
 
@@ -338,6 +384,24 @@ function updateProgressBar() {
 
 
 
+// Format mixed Hebrew/number content
+
+function formatMixedContent(text) {
+
+    // Wrap math expressions in spans
+
+    return text.replace(
+
+        /(\d+\s*[+\-×÷]\s*\d+\s*=\s*\d*)/g,
+
+        '<span class="math-expression">$1</span>'
+
+    );
+
+}
+
+
+
 // Display content
 
 function displayContent(data) {
@@ -346,11 +410,41 @@ function displayContent(data) {
 
     
 
+    // Format the content
+
+    if (data.content) {
+
+        data.content = formatMixedContent(data.content);
+
+    }
+
+    if (data.hint) {
+
+        data.hint = formatMixedContent(data.hint);
+
+    }
+
+    
+
+    // Add method badge
+
+    const methodBadge = data.methodDisplay ? 
+
+        `<div style="display: inline-block; background: rgba(139, 92, 246, 0.2); 
+
+                     padding: 4px 12px; border-radius: 20px; font-size: 0.9rem; 
+
+                     margin-bottom: 12px;">${data.methodDisplay}</div>` : '';
+
+    
+
     if (data.isQuestion) {
 
         // Question stage
 
         content.innerHTML = `
+
+            ${methodBadge}
 
             <h3>🎯 ${userData.name}, עכשיו ${userData.gender === 'girl' ? 'תורך' : 'תורך'}!</h3>
 
@@ -377,6 +471,8 @@ function displayContent(data) {
         // Explanation stage
 
         content.innerHTML = `
+
+            ${methodBadge}
 
             <h3>${getStageTitle()}</h3>
 

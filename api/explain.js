@@ -1,12 +1,52 @@
+// Rate limiting
+const rateLimit = new Map();
+
+// Hebrew text direction formatting
+function formatHebrewText(text) {
+  // Ensure numbers stay LTR within RTL text
+  return text
+    .replace(/(\d+)/g, '\u202D$1\u202C')  // LTR mark for numbers
+    .replace(/([a-zA-Z]+)/g, '\u202D$1\u202C'); // LTR mark for English
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
+  
+  // Get user IP
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+  const userKey = `${ip}_${new Date().toDateString()}`;
+  const requests = rateLimit.get(userKey) || 0;
+  
+  // Check limit (30 per day)
+  if (requests >= 30) {
+    return res.status(200).json({
+      content: "סיימת את המכסה היומית! חזור מחר 🌟",
+      visual: "💤",
+      method: "limit",
+      isQuestion: false,
+      limited: true
+    });
+  }
+  
+  // Increment counter
+  rateLimit.set(userKey, requests + 1);
+  
+  // Clean old entries every hour
+  if (Math.random() < 0.01) {
+    const now = new Date().toDateString();
+    for (const [key] of rateLimit) {
+      if (!key.includes(now)) {
+        rateLimit.delete(key);
+      }
+    }
+  }
   
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
   
   const { 
-    name = 'חבר', 
+    name = 'חבר',
     gender = 'boy',
     grade = '1-2',
     interests = '',
@@ -17,64 +57,124 @@ export default async function handler(req, res) {
   
   const apiKey = process.env.ANTHROPIC_API_KEY;
   
-  // Gender-specific language
-  const genderWords = {
-    boy: {
-      you: 'אתה',
-      your: 'שלך',
-      verb_past: '',
-      verb_future: '',
-      adjective: ''
-    },
-    girl: {
-      you: 'את',
-      your: 'שלך',
-      verb_past: 'ת',
-      verb_future: 'י',
-      adjective: 'ה'
-    }
+  // Age-specific language mapping
+  const ageGroups = {
+    '1-2': { age: 7, style: 'playful', maxWords: 8 },
+    '3-4': { age: 9, style: 'discovery', maxWords: 12 },
+    '5-6': { age: 11, style: 'logical', maxWords: 15 }
   };
   
-  const g = genderWords[gender];
+  const ageData = ageGroups[grade];
   
-  // Stage-specific content
-  const stageInstructions = {
-    1: 'רעיון בסיסי - 15 מילים מקסימום',
-    2: 'הדגמה ויזואלית עם אמוג\'ים',
-    3: 'גילוי הסוד/טריק',
-    4: 'תרגול קל מאוד עם רמז',
-    5: 'תרגול רגיל'
+  // 4 completely different explanation approaches
+  const explanationMethods = [
+    'story_based',      // סיפור עם בעיה ופתרון
+    'visual_pattern',   // דפוס ויזואלי
+    'logical_rule',     // חוק לוגי
+    'game_challenge'    // משחק/אתגר
+  ];
+  
+  const currentMethod = explanationMethods[(attemptNumber - 1) % 4];
+  
+  // Smart emoji mapping based on interests
+  const emojiMap = {
+    'כדורגל': { emoji: '⚽', context: 'גולים', action: 'בועט' },
+    'כדורסל': { emoji: '🏀', context: 'סלים', action: 'קולע' },
+    'מיינקראפט': { emoji: '⛏️', context: 'בלוקים', action: 'בונה' },
+    'רובלוקס': { emoji: '🎮', context: 'מטבעות', action: 'אוסף' },
+    'בישול': { emoji: '🍰', context: 'עוגות', action: 'אופה' },
+    'ציור': { emoji: '🎨', context: 'צבעים', action: 'מערבב' },
+    'ריקוד': { emoji: '💃', context: 'צעדים', action: 'רוקד' },
+    'default': { emoji: '🌟', context: 'כוכבים', action: 'אוסף' }
+  };
+  
+  // Find relevant emoji from interests
+  let contextData = emojiMap.default;
+  for (const [key, value] of Object.entries(emojiMap)) {
+    if (interests.includes(key)) {
+      contextData = value;
+      break;
+    }
+  }
+  
+  // Method-specific prompts
+  const methodPrompts = {
+    story_based: `
+      סיפור קצר (${ageData.maxWords} מילים):
+      "${name} ${contextData.action} ${contextData.context}.
+      בעיה מתמטית קטנה.
+      פתרון עם ${topic}."
+    `,
+    visual_pattern: `
+      דפוס ויזואלי עם ${contextData.emoji}:
+      "תראה את התבנית:
+      ${contextData.emoji}${contextData.emoji} + ${contextData.emoji} = ?
+      זה ${topic}!"
+    `,
+    logical_rule: `
+      חוק פשוט לזכור:
+      "כשיש לך ${contextData.context},
+      הכלל של ${topic} הוא...
+      תמיד עובד!"
+    `,
+    game_challenge: `
+      אתגר משחקי:
+      "${name}, משחק מהיר!
+      ${contextData.context} + ${topic} = 
+      מי מהיר יותר?"
+    `
   };
   
   const prompt = `
-אתה מסביר ${topic} ל${name} (${gender === 'girl' ? 'ילדה' : 'ילד'}) בכיתה ${grade}.
-${interests ? `${name} אוהב${gender === 'girl' ? 'ת' : ''}: ${interests}` : ''}
+אתה מסביר ${topic} ל${name} (${gender === 'girl' ? 'ילדה' : 'ילד'}) בגיל ${ageData.age}.
+תחביב: ${interests || 'כללי'}
+שיטת הסבר: ${currentMethod}
 
-שלב ${stage}: ${stageInstructions[stage]}
+כללי ברזל לגיל ${ageData.age}:
+1. מקסימום ${ageData.maxWords} מילים במשפט
+2. סגנון: ${ageData.style}
+3. השתמש ב: ${contextData.emoji} ${contextData.context}
+4. שיטה ${attemptNumber} מתוך 4: ${currentMethod}
 
-חוקים:
-1. פנה ל${name} בלשון ${gender === 'girl' ? 'נקבה' : 'זכר'}
-2. השתמש בתחביבים אם יש
-3. מקסימום 20 מילים + ויזואליזציה
-4. שלבים 1-3: רק הסבר, בלי שאלות
-5. שלבים 4-5: שאלה עם רמז
+${methodPrompts[currentMethod]}
 
-דוגמה לשלב ${stage}:
-${stage === 1 ? `"${name}, כפל זה חיבור מהיר! 3×2 = 3+3"` : ''}
-${stage === 2 ? `"תראה${g.verb_future}: 🍕🍕🍕 + 🍕🍕🍕 = 6 פיצות!"` : ''}
-${stage === 3 ? `"הסוד: 3×2 = 2×3! נסה${g.verb_future} ${g.you} גם!"` : ''}
-${stage === 4 ? `"עכשיו ${g.you}: 2×3 = ? (רמז: כמו 3+3)"` : ''}
-${stage === 5 ? `"${name}, כמה זה 4×2?"` : ''}
+דוגמה ספציפית ל-${currentMethod}:
+${currentMethod === 'story_based' ? 
+  `"${name} אסף 3 ${contextData.context}, מצא עוד 2. עכשיו יש 5!"` : ''}
+${currentMethod === 'visual_pattern' ? 
+  `"${contextData.emoji}${contextData.emoji}${contextData.emoji} + ${contextData.emoji}${contextData.emoji} = ${contextData.emoji}${contextData.emoji}${contextData.emoji}${contextData.emoji}${contextData.emoji}"` : ''}
+${currentMethod === 'logical_rule' ? 
+  `"הטריק: תמיד ספור את ה${contextData.context} על האצבעות!"` : ''}
+${currentMethod === 'game_challenge' ? 
+  `"10 שניות! כמה ${contextData.context} יש? 3+2=?"` : ''}
 
-החזר JSON:
+כללי פורמט קריטיים:
+1. טקסט עברי - רגיל (יישור מימין לשמאל אוטומטי)
+2. מספרים - השתמש ב: "3 + 2 = 5" (לא "5 = 2 + 3")
+3. תרגילים - תמיד מספרים משמאל לימין: "12 ÷ 3 = 4"
+4. אמוג'ים - אחרי הטקסט העברי: "3 כדורים ⚽⚽⚽"
+
+דוגמאות נכונות:
+✅ "יש לך 3 תפוחים ועוד 2 תפוחים"
+✅ "3 + 2 = 5"
+✅ "תראה: 🍎🍎🍎 + 🍎🍎"
+
+דוגמאות לא נכונות:
+❌ "יש לך תפוחים 3"
+❌ "5 = 2 + 3"
+❌ "🍎🍎 + 🍎🍎🍎 :תראה"
+
+החזר JSON קצר:
 {
-  "content": "התוכן",
-  "visual": "ויזואליזציה באמוג'ים",
+  "content": "ההסבר",
+  "visual": "${contextData.emoji} ויזואליזציה",
+  "method": "${currentMethod}",
   "isQuestion": ${stage >= 4},
-  "hint": "רמז אם זו שאלה",
-  "correctAnswer": "תשובה אם זו שאלה",
-  "nextButtonText": "${stage < 3 ? `הבנתי! תראה לי עוד` : stage === 3 ? `מוכן${g.adjective} לתרגל!` : `בדוק תשובה`}"
+  "hint": "רמז אם צריך",
+  "correctAnswer": "תשובה",
+  "ageAppropriateTone": true
 }`;
+
   
   try {
     if (!apiKey) throw new Error('No API key');
@@ -88,8 +188,8 @@ ${stage === 5 ? `"${name}, כמה זה 4×2?"` : ''}
       },
       body: JSON.stringify({
         model: 'claude-3-haiku-20240307',
-        max_tokens: 400,
-        temperature: 0.8,
+        max_tokens: 300,
+        temperature: 0.7,
         messages: [{ role: 'user', content: prompt }]
       })
     });
@@ -97,19 +197,52 @@ ${stage === 5 ? `"${name}, כמה זה 4×2?"` : ''}
     const data = await response.json();
     const text = data.content[0].text;
     const json = JSON.parse(text.replace(/```json\n?|```\n?/g, ''));
+    
+    // Format Hebrew text direction
+    json.content = formatHebrewText(json.content);
+    if (json.visual) json.visual = formatHebrewText(json.visual);
+    if (json.hint) json.hint = formatHebrewText(json.hint);
+    
     return res.status(200).json(json);
     
   } catch (error) {
-    // Gender-aware fallback
-    const fallback = {
-      content: `${name}, ${topic} זה ${gender === 'girl' ? 'קלה' : 'קל'}!`,
-      visual: '🎯➡️✨',
-      isQuestion: stage >= 4,
-      hint: stage >= 4 ? 'חשוב/י טוב' : null,
-      correctAnswer: stage >= 4 ? '4' : null,
-      nextButtonText: stage < 4 ? 'המשך' : 'בדוק'
+    // Age-appropriate fallbacks
+    const fallbacks = {
+      '1-2': {
+        story_based: `${name} אסף 3 ${contextData.context}. מצא עוד 2. יש 5!`,
+        visual_pattern: `${contextData.emoji}${contextData.emoji}${contextData.emoji} + ${contextData.emoji}${contextData.emoji} = 5`,
+        logical_rule: `תמיד ספור על האצבעות!`,
+        game_challenge: `מהר! 3+2=?`
+      },
+      '3-4': {
+        story_based: `${name} בנה 3 מגדלים של 4 ${contextData.context}. סה"כ 12!`,
+        visual_pattern: `3 שורות × 4 = 12 ${contextData.emoji}`,
+        logical_rule: `כפל = חיבור מהיר. 3×4 = 4+4+4`,
+        game_challenge: `אתגר 20 שניות: 3×4=?`
+      },
+      '5-6': {
+        story_based: `${name} חילק 12 ${contextData.context} ל-3 חברים. כל אחד קיבל 4`,
+        visual_pattern: `12 ÷ 3 = 4 לכל קבוצה`,
+        logical_rule: `חילוק = הפוך מכפל. 12÷3 כי 3×4=12`,
+        game_challenge: `חידה: אם 3×?=12, מה ה-?`
+      }
     };
     
-    return res.status(200).json(fallback);
+    const fallbackResponse = {
+      content: fallbacks[grade][currentMethod],
+      visual: contextData.emoji.repeat(3),
+      method: currentMethod,
+      isQuestion: stage >= 4,
+      hint: `חשוב על ${contextData.context}`,
+      correctAnswer: '5',
+      ageAppropriateTone: true
+    };
+    
+    // Format Hebrew text direction for fallback
+    fallbackResponse.content = formatHebrewText(fallbackResponse.content);
+    if (fallbackResponse.visual) fallbackResponse.visual = formatHebrewText(fallbackResponse.visual);
+    if (fallbackResponse.hint) fallbackResponse.hint = formatHebrewText(fallbackResponse.hint);
+    
+    return res.status(200).json(fallbackResponse);
   }
 }
