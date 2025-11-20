@@ -5,89 +5,75 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
   
-  const { grade, topic, attemptNumber = 1, stage = 'explain' } = req.body;
+  const { 
+    name = 'חבר', 
+    gender = 'boy',
+    grade = '1-2',
+    interests = '',
+    topic,
+    stage = 1,
+    attemptNumber = 1
+  } = req.body;
+  
   const apiKey = process.env.ANTHROPIC_API_KEY;
   
-  // Progressive Learning Stages
-  const learningFlow = {
-    1: 'micro_concept',    // רעיון של 10 מילים
-    2: 'visual_show',      // הדגמה ויזואלית
-    3: 'pattern_reveal',   // גילוי החוק
-    4: 'practice_easy',    // תרגול קל מאוד
-    5: 'practice_medium'   // תרגול רגיל
+  // Gender-specific language
+  const genderWords = {
+    boy: {
+      you: 'אתה',
+      your: 'שלך',
+      verb_past: '',
+      verb_future: '',
+      adjective: ''
+    },
+    girl: {
+      you: 'את',
+      your: 'שלך',
+      verb_past: 'ת',
+      verb_future: 'י',
+      adjective: 'ה'
+    }
   };
   
-  // 10 Breakthrough Formats
-  const formats = [
-    'emoji_story',         // סיפור באמוג'ים
-    'three_second_rule',   // הסבר ב-3 שניות
-    'find_pattern',        // גלה את החוק
-    'fix_mistake',         // תקן את הטעות
-    'visual_blocks',       // בלוקים ויזואליים
-    'secret_trick',        // הטריק הסודי
-    'you_teach',          // אתה המורה
-    'yes_no_rapid',       // כן/לא מהיר
-    'build_yourself',     // בנה בעצמך
-    'real_world'          // מהעולם האמיתי
-  ];
+  const g = genderWords[gender];
   
-  const currentFormat = formats[attemptNumber % 10];
-  const currentStage = learningFlow[Math.min(attemptNumber, 5)];
+  // Stage-specific content
+  const stageInstructions = {
+    1: 'רעיון בסיסי - 15 מילים מקסימום',
+    2: 'הדגמה ויזואלית עם אמוג\'ים',
+    3: 'גילוי הסוד/טריק',
+    4: 'תרגול קל מאוד עם רמז',
+    5: 'תרגול רגיל'
+  };
   
   const prompt = `
-אתה מורה גאון שמסביר ${topic} לילד בכיתה ${grade}.
+אתה מסביר ${topic} ל${name} (${gender === 'girl' ? 'ילדה' : 'ילד'}) בכיתה ${grade}.
+${interests ? `${name} אוהב${gender === 'girl' ? 'ת' : ''}: ${interests}` : ''}
 
-שלב נוכחי: ${currentStage}
-פורמט: ${currentFormat}
+שלב ${stage}: ${stageInstructions[stage]}
 
-חוקי ברזל:
-1. אם שלב 1-3: רק הסבר, בלי שאלות!
-2. מקסימום 20 מילים + ויזואליזציה
-3. שפת ילדים ("תכל'ס", "סבבה", "קל")
-4. חייב אמוג'ים שמסביר הכל
-5. שלב 4-5: שאלה קלה עם רמז מובנה
+חוקים:
+1. פנה ל${name} בלשון ${gender === 'girl' ? 'נקבה' : 'זכר'}
+2. השתמש בתחביבים אם יש
+3. מקסימום 20 מילים + ויזואליזציה
+4. שלבים 1-3: רק הסבר, בלי שאלות
+5. שלבים 4-5: שאלה עם רמז
 
-דוגמאות לפי שלב:
-
-שלב 1 (micro_concept):
-"כפל = חיבור מהיר
-3×4 = 🍕🍕🍕 ארבע פעמים"
-
-שלב 2 (visual_show):
-"3×4 בתמונה:
-⭐⭐⭐
-⭐⭐⭐  
-⭐⭐⭐
-⭐⭐⭐
-סופרים: 12!"
-
-שלב 3 (pattern_reveal):
-"הסוד: 3×4 = 4×3
-🎾🎾🎾 × 4
-או
-🎾🎾🎾🎾 × 3
-אותה תוצאה!"
-
-שלב 4 (practice_easy):
-"עכשיו אתה:
-2×3 = כמה זוגות נעליים? 👟
-רמז: 👟👟👟"
-
-שלב 5 (practice_medium):
-"אתגר קטן:
-5×2 = ?
-(חשוב: כמה ידיים לך ולחבר?)"
+דוגמה לשלב ${stage}:
+${stage === 1 ? `"${name}, כפל זה חיבור מהיר! 3×2 = 3+3"` : ''}
+${stage === 2 ? `"תראה${g.verb_future}: 🍕🍕🍕 + 🍕🍕🍕 = 6 פיצות!"` : ''}
+${stage === 3 ? `"הסוד: 3×2 = 2×3! נסה${g.verb_future} ${g.you} גם!"` : ''}
+${stage === 4 ? `"עכשיו ${g.you}: 2×3 = ? (רמז: כמו 3+3)"` : ''}
+${stage === 5 ? `"${name}, כמה זה 4×2?"` : ''}
 
 החזר JSON:
 {
-  "stage": "${currentStage}",
-  "format": "${currentFormat}",
-  "content": "ההסבר/שאלה",
+  "content": "התוכן",
   "visual": "ויזואליזציה באמוג'ים",
-  "isQuestion": false/true,
+  "isQuestion": ${stage >= 4},
   "hint": "רמז אם זו שאלה",
-  "correctAnswer": "התשובה אם זו שאלה",
-  "nextButtonText": "הבנתי! הלאה" או "בדוק תשובה"
+  "correctAnswer": "תשובה אם זו שאלה",
+  "nextButtonText": "${stage < 3 ? `הבנתי! תראה לי עוד` : stage === 3 ? `מוכן${g.adjective} לתרגל!` : `בדוק תשובה`}"
 }`;
   
   try {
@@ -114,46 +100,16 @@ export default async function handler(req, res) {
     return res.status(200).json(json);
     
   } catch (error) {
-    // Smart fallbacks per stage
-    const fallbacks = {
-      1: {
-        stage: "micro_concept",
-        format: "emoji_story",
-        content: "חיבור = לשים ביחד 👐",
-        visual: "🍎 + 🍎 = 🍎🍎",
-        isQuestion: false,
-        nextButtonText: "הבנתי! תראה לי עוד"
-      },
-      2: {
-        stage: "visual_show",
-        format: "visual_blocks",
-        content: "ככה זה נראה:",
-        visual: "📦 + 📦 = 📦📦",
-        isQuestion: false,
-        nextButtonText: "מגניב! המשך"
-      },
-      3: {
-        stage: "pattern_reveal",
-        format: "secret_trick",
-        content: "הטריק: ספור קבוצות!",
-        visual: "👥👥👥 = 3 קבוצות",
-        isQuestion: false,
-        nextButtonText: "וואו! עכשיו הבנתי"
-      },
-      4: {
-        stage: "practice_easy",
-        format: "yes_no_rapid",
-        content: "1+1 = 2?",
-        visual: "🍕 + 🍕 = ?",
-        isQuestion: true,
-        hint: "כמה פיצות יש?",
-        correctAnswer: "2",
-        nextButtonText: "בדוק תשובה"
-      }
+    // Gender-aware fallback
+    const fallback = {
+      content: `${name}, ${topic} זה ${gender === 'girl' ? 'קלה' : 'קל'}!`,
+      visual: '🎯➡️✨',
+      isQuestion: stage >= 4,
+      hint: stage >= 4 ? 'חשוב/י טוב' : null,
+      correctAnswer: stage >= 4 ? '4' : null,
+      nextButtonText: stage < 4 ? 'המשך' : 'בדוק'
     };
     
-    return res.status(200).json(
-      fallbacks[Math.min(attemptNumber, 4)] || fallbacks[1]
-    );
+    return res.status(200).json(fallback);
   }
 }

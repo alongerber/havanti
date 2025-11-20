@@ -8,7 +8,7 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>הבנתי! - מסביר חכם לילדים</title>
+    <title>הבנתי! - המסביר האישי שלך</title>
 
     <style>
 
@@ -54,13 +54,7 @@
 
             position: fixed;
 
-            top: 0;
-
-            left: 0;
-
-            right: 0;
-
-            bottom: 0;
+            inset: 0;
 
             background: radial-gradient(circle at 20% 50%, rgba(139, 92, 246, 0.3) 0%, transparent 50%),
 
@@ -146,37 +140,207 @@
 
         @keyframes slideIn {
 
-            from {
+            from { opacity: 0; transform: translateY(20px); }
 
-                opacity: 0;
-
-                transform: translateY(20px);
-
-            }
-
-            to {
-
-                opacity: 1;
-
-                transform: translateY(0);
-
-            }
+            to { opacity: 1; transform: translateY(0); }
 
         }
 
         
 
-        h2 {
+        /* Welcome Screen Styles */
 
-            font-size: 1.5rem;
+        .welcome-input {
+
+            width: 100%;
+
+            padding: 16px;
+
+            background: rgba(139, 92, 246, 0.1);
+
+            border: 2px solid rgba(139, 92, 246, 0.3);
+
+            border-radius: 12px;
+
+            color: white;
+
+            font-size: 1.1rem;
+
+            margin-bottom: 16px;
+
+            text-align: center;
+
+            transition: all 0.3s;
+
+        }
+
+        
+
+        .welcome-input:focus {
+
+            outline: none;
+
+            border-color: #8b5cf6;
+
+            background: rgba(139, 92, 246, 0.15);
+
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+
+        }
+
+        
+
+        .welcome-input::placeholder {
+
+            color: rgba(255, 255, 255, 0.4);
+
+        }
+
+        
+
+        .gender-buttons {
+
+            display: grid;
+
+            grid-template-columns: 1fr 1fr;
+
+            gap: 16px;
+
+            margin: 24px 0;
+
+        }
+
+        
+
+        .gender-btn {
+
+            padding: 20px;
+
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(139, 92, 246, 0.1));
+
+            border: 2px solid transparent;
+
+            border-radius: 16px;
+
+            color: white;
+
+            font-size: 1.2rem;
+
+            cursor: pointer;
+
+            transition: all 0.3s;
+
+        }
+
+        
+
+        .gender-btn:hover {
+
+            border-color: #8b5cf6;
+
+            transform: translateY(-2px);
+
+        }
+
+        
+
+        .gender-btn.selected {
+
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+
+            border-color: transparent;
+
+        }
+
+        
+
+        .interests-textarea {
+
+            width: 100%;
+
+            padding: 16px;
+
+            background: rgba(139, 92, 246, 0.1);
+
+            border: 2px solid rgba(139, 92, 246, 0.3);
+
+            border-radius: 12px;
+
+            color: white;
+
+            font-size: 1rem;
 
             margin-bottom: 24px;
 
-            color: rgba(255, 255, 255, 0.95);
+            resize: none;
+
+            font-family: inherit;
+
+            transition: all 0.3s;
 
         }
 
         
+
+        .interests-textarea:focus {
+
+            outline: none;
+
+            border-color: #8b5cf6;
+
+            background: rgba(139, 92, 246, 0.15);
+
+        }
+
+        
+
+        .start-btn {
+
+            width: 100%;
+
+            padding: 18px;
+
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+
+            border: none;
+
+            border-radius: 16px;
+
+            color: white;
+
+            font-size: 1.2rem;
+
+            font-weight: 600;
+
+            cursor: pointer;
+
+            transition: all 0.3s;
+
+        }
+
+        
+
+        .start-btn:hover {
+
+            transform: translateY(-2px);
+
+            box-shadow: 0 20px 40px -12px rgba(139, 92, 246, 0.5);
+
+        }
+
+        
+
+        .start-btn:disabled {
+
+            opacity: 0.5;
+
+            cursor: not-allowed;
+
+        }
+
+        
+
+        /* Grade and Topic Buttons */
 
         .grade-buttons {
 
@@ -208,7 +372,7 @@
 
             cursor: pointer;
 
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s;
 
         }
 
@@ -246,34 +410,6 @@
 
         
 
-        .topic-buttons::-webkit-scrollbar {
-
-            width: 6px;
-
-        }
-
-        
-
-        .topic-buttons::-webkit-scrollbar-track {
-
-            background: rgba(255, 255, 255, 0.05);
-
-            border-radius: 3px;
-
-        }
-
-        
-
-        .topic-buttons::-webkit-scrollbar-thumb {
-
-            background: rgba(139, 92, 246, 0.3);
-
-            border-radius: 3px;
-
-        }
-
-        
-
         .topic-btn {
 
             padding: 16px;
@@ -283,6 +419,46 @@
         }
 
         
+
+        /* Progress Bar */
+
+        .progress-container {
+
+            display: flex;
+
+            gap: 8px;
+
+            margin-bottom: 24px;
+
+        }
+
+        
+
+        .progress-step {
+
+            flex: 1;
+
+            height: 6px;
+
+            background: rgba(255, 255, 255, 0.1);
+
+            border-radius: 3px;
+
+            transition: all 0.3s;
+
+        }
+
+        
+
+        .progress-step.active {
+
+            background: linear-gradient(90deg, #8b5cf6, #ec4899);
+
+        }
+
+        
+
+        /* Learning Content */
 
         .explanation-box {
 
@@ -299,20 +475,6 @@
             font-size: 1.15rem;
 
             line-height: 1.8;
-
-            color: rgba(255, 255, 255, 0.95);
-
-        }
-
-        
-
-        .explanation-box h3 {
-
-            color: #a78bfa;
-
-            margin-bottom: 16px;
-
-            font-size: 1.3rem;
 
         }
 
@@ -338,23 +500,75 @@
 
         
 
-        .retry-btn {
-
-            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        .answer-input {
 
             width: 100%;
 
-            margin-bottom: 12px;
+            padding: 16px;
+
+            background: rgba(139, 92, 246, 0.1);
+
+            border: 2px solid rgba(139, 92, 246, 0.3);
+
+            border-radius: 12px;
+
+            color: white;
+
+            font-size: 1.2rem;
+
+            text-align: center;
+
+            margin: 20px 0;
 
         }
 
         
 
-        .start-over {
-
-            background: rgba(255, 255, 255, 0.1);
+        .check-btn {
 
             width: 100%;
+
+            padding: 16px;
+
+            background: linear-gradient(135deg, #10b981, #059669);
+
+            border: none;
+
+            border-radius: 12px;
+
+            color: white;
+
+            font-size: 1.1rem;
+
+            font-weight: 600;
+
+            cursor: pointer;
+
+        }
+
+        
+
+        .next-btn {
+
+            width: 100%;
+
+            padding: 16px;
+
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+
+            border: none;
+
+            border-radius: 12px;
+
+            color: white;
+
+            font-size: 1.1rem;
+
+            font-weight: 600;
+
+            cursor: pointer;
+
+            margin-top: 20px;
 
         }
 
@@ -365,8 +579,6 @@
             text-align: center;
 
             padding: 40px;
-
-            color: rgba(255, 255, 255, 0.5);
 
         }
 
@@ -412,13 +624,45 @@
 
         
 
-        @keyframes successPop {
+        @keyframes pop {
 
             0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
 
             50% { transform: translate(-50%, -50%) scale(1.1); }
 
             100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+
+        }
+
+        
+
+        .privacy-note {
+
+            text-align: center;
+
+            color: rgba(255, 255, 255, 0.4);
+
+            font-size: 0.9rem;
+
+            margin-top: 24px;
+
+        }
+
+        
+
+        .personal-greeting {
+
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1));
+
+            border: 1px solid rgba(16, 185, 129, 0.3);
+
+            border-radius: 12px;
+
+            padding: 16px;
+
+            margin-bottom: 24px;
+
+            text-align: center;
 
         }
 
@@ -430,15 +674,75 @@
 
     <div class="container">
 
-        <h1>🎯 הבנתי!</h1>
+        <!-- Welcome Screen -->
 
-        <p class="subtitle">הסברים שעובדים - עד שתבין</p>
+        <div id="welcomeStep" class="step">
+
+            <h1>👋 שלום!</h1>
+
+            <p class="subtitle">אני דני, המסביר האישי שלך</p>
+
+            
+
+            <input type="text" id="childName" placeholder="איך קוראים לך?" 
+
+                   class="welcome-input" maxlength="20">
+
+            
+
+            <div class="gender-buttons">
+
+                <button class="gender-btn" onclick="selectGender('boy')" id="boyBtn">
+
+                    👦 ילד
+
+                </button>
+
+                <button class="gender-btn" onclick="selectGender('girl')" id="girlBtn">
+
+                    👧 ילדה
+
+                </button>
+
+            </div>
+
+            
+
+            <textarea id="interests" 
+
+                      placeholder="ספר/י לי משהו עליך... מה אתה/את אוהב/ת? באיזה משחק אתה/את משחק/ת?" 
+
+                      class="interests-textarea" 
+
+                      rows="3"></textarea>
+
+            
+
+            <button onclick="startJourney()" class="start-btn" id="startBtn" disabled>
+
+                💜 בוא/י נתחיל את המסע!
+
+            </button>
+
+            
+
+            <p class="privacy-note">
+
+                🔒 המידע נשמר רק במכשיר שלך
+
+            </p>
+
+        </div>
 
         
 
-        <div id="gradeStep" class="step">
+        <!-- Grade Selection -->
 
-            <h2>באיזו כיתה אתה?</h2>
+        <div id="gradeStep" class="step hidden">
+
+            <div id="personalGreeting" class="personal-greeting"></div>
+
+            <h2>באיזו כיתה?</h2>
 
             <div class="grade-buttons">
 
@@ -454,9 +758,11 @@
 
         
 
+        <!-- Topic Selection -->
+
         <div id="topicStep" class="step hidden">
 
-            <h2>בחר נושא:</h2>
+            <h2>מה נלמד היום?</h2>
 
             <div id="topicButtons" class="topic-buttons"></div>
 
@@ -464,25 +770,31 @@
 
         
 
-        <div id="resultStep" class="step hidden">
+        <!-- Learning Screen -->
 
-            <div id="explanation" class="explanation-box"></div>
+        <div id="learningStep" class="step hidden">
 
-            <button onclick="explainDifferently()" class="retry-btn">
+            <div class="progress-container">
 
-                🔄 הסבר אחרת
+                <div class="progress-step" id="step1"></div>
 
-            </button>
+                <div class="progress-step" id="step2"></div>
 
-            <button onclick="startOver()" class="start-over">
+                <div class="progress-step" id="step3"></div>
 
-                📚 נושא חדש
+                <div class="progress-step" id="step4"></div>
 
-            </button>
+                <div class="progress-step" id="step5"></div>
+
+            </div>
+
+            <div id="learningContent" class="explanation-box"></div>
 
         </div>
 
         
+
+        <!-- Loading -->
 
         <div id="loadingStep" class="step hidden">
 
@@ -505,4 +817,3 @@
 </body>
 
 </html>
-

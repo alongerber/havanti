@@ -1,14 +1,28 @@
-let currentGrade = '';
+// Personal Information
 
-let currentTopic = '';
+let userData = {
 
-let explanationCount = 0;
+    name: '',
 
-let currentStage = 1;
+    gender: '',
 
-let understood = false;
+    grade: '',
+
+    interests: '',
+
+    currentTopic: '',
+
+    currentStage: 1,
+
+    explanationCount: 0,
+
+    topicsLearned: 0
+
+};
 
 
+
+// Topics by grade
 
 const topics = {
 
@@ -16,7 +30,7 @@ const topics = {
 
         'חיבור עד 10',
 
-        'חיבור עד 20', 
+        'חיבור עד 20',
 
         'חיסור עד 10',
 
@@ -36,9 +50,9 @@ const topics = {
 
         'לוח הכפל',
 
-        'כפל - מספר חד ספרתי',
+        'כפל חד-ספרתי',
 
-        'כפל - מספר דו ספרתי',
+        'כפל דו-ספרתי',
 
         'חילוק',
 
@@ -48,9 +62,7 @@ const topics = {
 
         'חיבור עד 1000',
 
-        'חיסור עד 1000',
-
-        'היקף ושטח'
+        'חיסור עד 1000'
 
     ],
 
@@ -62,8 +74,6 @@ const topics = {
 
         'שברים - כפל',
 
-        'שברים - חילוק',
-
         'אחוזים',
 
         'מספרים עשרוניים',
@@ -72,13 +82,9 @@ const topics = {
 
         'חזקות',
 
-        'סדר פעולות חשבון',
+        'סדר פעולות',
 
-        'משוואות פשוטות',
-
-        'נפח',
-
-        'יחס ופרופורציה'
+        'משוואות פשוטות'
 
     ]
 
@@ -86,13 +92,121 @@ const topics = {
 
 
 
+// Gender selection
+
+function selectGender(gender) {
+
+    userData.gender = gender;
+
+    document.getElementById('boyBtn').classList.toggle('selected', gender === 'boy');
+
+    document.getElementById('girlBtn').classList.toggle('selected', gender === 'girl');
+
+    checkIfReady();
+
+}
+
+
+
+// Check if ready to start
+
+function checkIfReady() {
+
+    const name = document.getElementById('childName').value.trim();
+
+    const ready = name && userData.gender;
+
+    document.getElementById('startBtn').disabled = !ready;
+
+}
+
+
+
+// Name input listener
+
+document.getElementById('childName')?.addEventListener('input', checkIfReady);
+
+
+
+// Start journey
+
+function startJourney() {
+
+    userData.name = document.getElementById('childName').value.trim();
+
+    userData.interests = document.getElementById('interests').value;
+
+    
+
+    // Save to localStorage
+
+    localStorage.setItem('userData', JSON.stringify(userData));
+
+    
+
+    // Show personalized greeting
+
+    showPersonalGreeting();
+
+    
+
+    // Transition to grade selection
+
+    document.getElementById('welcomeStep').classList.add('hidden');
+
+    document.getElementById('gradeStep').classList.remove('hidden');
+
+}
+
+
+
+// Personal greeting
+
+function showPersonalGreeting() {
+
+    const hour = new Date().getHours();
+
+    let greeting;
+
+    
+
+    if (hour < 12) greeting = 'בוקר טוב';
+
+    else if (hour < 17) greeting = 'צהריים טובים';
+
+    else greeting = 'ערב טוב';
+
+    
+
+    const genderText = userData.gender === 'girl' ? 'מוכנה' : 'מוכן';
+
+    
+
+    document.getElementById('personalGreeting').innerHTML = `
+
+        ${greeting} ${userData.name}! 🌟<br>
+
+        ${genderText} להרפתקת למידה?
+
+    `;
+
+}
+
+
+
+// Grade selection
+
 function selectGrade(grade) {
 
-    currentGrade = grade;
+    userData.grade = grade;
 
-    const topicsContainer = document.getElementById('topicButtons');
+    
 
-    topicsContainer.innerHTML = '';
+    // Create topic buttons
+
+    const container = document.getElementById('topicButtons');
+
+    container.innerHTML = '';
 
     
 
@@ -106,7 +220,7 @@ function selectGrade(grade) {
 
         btn.onclick = () => selectTopic(topic);
 
-        topicsContainer.appendChild(btn);
+        container.appendChild(btn);
 
     });
 
@@ -120,27 +234,39 @@ function selectGrade(grade) {
 
 
 
+// Topic selection
+
 function selectTopic(topic) {
 
-    currentTopic = topic;
+    userData.currentTopic = topic;
 
-    explanationCount = 0;
+    userData.currentStage = 1;
 
-    currentStage = 1;
+    userData.explanationCount = 0;
+
+    
 
     document.getElementById('topicStep').classList.add('hidden');
 
-    getExplanation();
+    startLearning();
 
 }
 
 
 
-async function getExplanation() {
+// Start learning process
+
+async function startLearning() {
+
+    document.getElementById('learningStep').classList.remove('hidden');
 
     document.getElementById('loadingStep').classList.remove('hidden');
 
-    document.getElementById('resultStep').classList.add('hidden');
+    
+
+    // Update progress bar
+
+    updateProgressBar();
 
     
 
@@ -154,13 +280,19 @@ async function getExplanation() {
 
             body: JSON.stringify({
 
-                grade: currentGrade,
+                name: userData.name,
 
-                topic: currentTopic,
+                gender: userData.gender,
 
-                attemptNumber: explanationCount + 1,
+                grade: userData.grade,
 
-                stage: currentStage
+                interests: userData.interests,
+
+                topic: userData.currentTopic,
+
+                stage: userData.currentStage,
+
+                attemptNumber: userData.explanationCount + 1
 
             })
 
@@ -170,15 +302,15 @@ async function getExplanation() {
 
         const data = await response.json();
 
-        displayProgressiveExplanation(data);
-
-        explanationCount++;
+        displayContent(data);
 
         
 
     } catch (error) {
 
-        console.error('Error:', error);
+        // Fallback content
+
+        displayFallbackContent();
 
     }
 
@@ -190,77 +322,51 @@ async function getExplanation() {
 
 
 
-function displayProgressiveExplanation(data) {
+// Update progress bar
 
-    const explanationDiv = document.getElementById('explanation');
+function updateProgressBar() {
 
-    
+    for (let i = 1; i <= 5; i++) {
 
-    // Stage indicator
+        const step = document.getElementById(`step${i}`);
 
-    const stageIndicator = `
+        step.classList.toggle('active', i <= userData.currentStage);
 
-        <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+    }
 
-            ${[1,2,3,4,5].map(s => `
+}
 
-                <div style="
 
-                    width: 20%;
 
-                    height: 6px;
+// Display content
 
-                    background: ${s <= currentStage ? 'linear-gradient(90deg, #8b5cf6, #ec4899)' : 'rgba(255,255,255,0.1)'};
+function displayContent(data) {
 
-                    border-radius: 3px;
-
-                    transition: all 0.3s;
-
-                "></div>
-
-            `).join('')}
-
-        </div>
-
-    `;
+    const content = document.getElementById('learningContent');
 
     
-
-    // Content based on stage
 
     if (data.isQuestion) {
 
-        // Practice stage - show input
+        // Question stage
 
-        explanationDiv.innerHTML = `
+        content.innerHTML = `
 
-            ${stageIndicator}
-
-            <h3>🎯 עכשיו תורך!</h3>
+            <h3>🎯 ${userData.name}, עכשיו ${userData.gender === 'girl' ? 'תורך' : 'תורך'}!</h3>
 
             <p style="font-size: 1.3rem; margin: 20px 0;">${data.content}</p>
 
-            <div class="visual-example">${data.visual}</div>
+            ${data.visual ? `<div class="visual-example">${data.visual}</div>` : ''}
 
             ${data.hint ? `<p style="color: #a78bfa;">💡 רמז: ${data.hint}</p>` : ''}
 
-            <input type="text" id="answerInput" placeholder="התשובה שלך..." 
+            <input type="text" id="answerInput" class="answer-input" 
 
-                   style="width: 100%; padding: 16px; background: rgba(139, 92, 246, 0.1); 
+                   placeholder="${userData.gender === 'girl' ? 'התשובה שלך...' : 'התשובה שלך...'}">
 
-                          border: 2px solid rgba(139, 92, 246, 0.3); border-radius: 12px; 
+            <button onclick="checkAnswer('${data.correctAnswer}')" class="check-btn">
 
-                          color: white; font-size: 1.2rem; text-align: center; margin: 20px 0;">
-
-            <button onclick="checkAnswer('${data.correctAnswer}')" 
-
-                    style="width: 100%; padding: 16px; background: linear-gradient(135deg, #10b981, #059669);
-
-                           border: none; border-radius: 12px; color: white; font-size: 1.1rem; 
-
-                           font-weight: 600; cursor: pointer;">
-
-                ✅ בדוק תשובה
+                ✅ ${userData.gender === 'girl' ? 'בדקי' : 'בדוק'} תשובה
 
             </button>
 
@@ -268,27 +374,19 @@ function displayProgressiveExplanation(data) {
 
     } else {
 
-        // Explanation stage - just show content
+        // Explanation stage
 
-        explanationDiv.innerHTML = `
+        content.innerHTML = `
 
-            ${stageIndicator}
-
-            <h3>${currentStage === 1 ? '💡 הרעיון' : currentStage === 2 ? '👀 תראה' : '🔮 הסוד'}</h3>
+            <h3>${getStageTitle()}</h3>
 
             <p style="font-size: 1.3rem; margin: 20px 0;">${data.content}</p>
 
-            <div class="visual-example">${data.visual}</div>
+            ${data.visual ? `<div class="visual-example">${data.visual}</div>` : ''}
 
-            <button onclick="nextStage()" 
+            <button onclick="nextStage()" class="next-btn">
 
-                    style="width: 100%; padding: 16px; background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-
-                           border: none; border-radius: 12px; color: white; font-size: 1.1rem; 
-
-                           font-weight: 600; cursor: pointer; margin-top: 20px;">
-
-                ${data.nextButtonText || 'הבנתי! הלאה ➡️'}
+                ${data.nextButtonText || getNextButtonText()}
 
             </button>
 
@@ -298,89 +396,75 @@ function displayProgressiveExplanation(data) {
 
     
 
-    document.getElementById('resultStep').classList.remove('hidden');
+    userData.explanationCount++;
+
+}
+
+
+
+// Get stage title
+
+function getStageTitle() {
+
+    const titles = {
+
+        1: `💡 ${userData.name}, בוא ${userData.gender === 'girl' ? 'נבין' : 'נבין'} את הרעיון`,
+
+        2: `👀 ${userData.gender === 'girl' ? 'תראי' : 'תראה'} איך זה עובד`,
+
+        3: `🔮 הסוד שלא ${userData.gender === 'girl' ? 'ידעת' : 'ידעת'}`,
+
+        4: `🎯 ${userData.gender === 'girl' ? 'מוכנה' : 'מוכן'} לנסות?`,
+
+        5: `🚀 אתגר אחרון!`
+
+    };
+
+    return titles[userData.currentStage] || '';
+
+}
+
+
+
+// Get next button text
+
+function getNextButtonText() {
+
+    const texts = {
+
+        1: `${userData.gender === 'girl' ? 'הבנתי' : 'הבנתי'}! ${userData.gender === 'girl' ? 'תראי' : 'תראה'} לי עוד`,
+
+        2: 'וואו! זה קל',
+
+        3: 'עכשיו זה ברור!',
+
+        4: `${userData.gender === 'girl' ? 'מוכנה' : 'מוכן'}!`,
+
+        5: 'לסיכום'
+
+    };
+
+    return texts[userData.currentStage] || 'המשך';
+
+}
+
+
+
+// Check answer
+
+function checkAnswer(correct) {
+
+    const answer = document.getElementById('answerInput').value.trim();
 
     
 
-    // Hide "explain differently" button for first 3 stages
-
-    const retryBtn = document.querySelector('.retry-btn');
-
-    if (retryBtn) {
-
-        retryBtn.style.display = currentStage <= 3 ? 'none' : 'block';
-
-    }
-
-}
-
-
-
-function explainDifferently() {
-
-    if (explanationCount >= 5) {
-
-        explanationCount = 0; // Reset after 5 attempts
-
-    }
-
-    getExplanation();
-
-}
-
-
-
-function nextStage() {
-
-    if (currentStage < 5) {
-
-        currentStage++;
-
-        getExplanation();
-
-    } else {
-
-        // Completed all stages
+    if (answer === correct || answer === correct.toString()) {
 
         showSuccess();
 
-    }
-
-}
-
-
-
-function checkAnswer(correctAnswer) {
-
-    const userAnswer = document.getElementById('answerInput').value.trim();
-
-    
-
-    if (userAnswer === correctAnswer || userAnswer === correctAnswer.toString()) {
-
-        // Correct!
-
-        showSuccessMessage();
-
-        setTimeout(() => {
-
-            if (currentStage < 5) {
-
-                currentStage++;
-
-                getExplanation();
-
-            } else {
-
-                showSuccess();
-
-            }
-
-        }, 2000);
+        setTimeout(nextStage, 2000);
 
     } else {
-
-        // Wrong - shake and retry
 
         document.getElementById('answerInput').style.animation = 'shake 0.5s';
 
@@ -396,11 +480,27 @@ function checkAnswer(correctAnswer) {
 
 
 
-function showSuccessMessage() {
+// Show success message
+
+function showSuccess() {
+
+    const messages = [
+
+        `${userData.name}, ${userData.gender === 'girl' ? 'את גאונה' : 'אתה גאון'}!`,
+
+        `מעולה ${userData.name}!`,
+
+        `${userData.gender === 'girl' ? 'צדקת' : 'צדקת'} בול!`,
+
+        `וואו ${userData.name}!`
+
+    ];
+
+    
 
     const div = document.createElement('div');
 
-    div.innerHTML = '🎉 מעולה! צדקת!';
+    div.innerHTML = `🎉 ${messages[Math.floor(Math.random() * messages.length)]}`;
 
     div.style.cssText = `
 
@@ -426,7 +526,7 @@ function showSuccessMessage() {
 
         z-index: 1000;
 
-        animation: successPop 0.5s ease;
+        animation: pop 0.5s ease;
 
     `;
 
@@ -438,31 +538,211 @@ function showSuccessMessage() {
 
 
 
-function showSuccess() {
+// Next stage
 
-    document.getElementById('explanation').innerHTML = `
+function nextStage() {
+
+    if (userData.currentStage < 5) {
+
+        userData.currentStage++;
+
+        startLearning();
+
+    } else {
+
+        completeTopic();
+
+    }
+
+}
+
+
+
+// Complete topic
+
+function completeTopic() {
+
+    userData.topicsLearned++;
+
+    localStorage.setItem('topicsLearned', userData.topicsLearned);
+
+    
+
+    const content = document.getElementById('learningContent');
+
+    content.innerHTML = `
 
         <div style="text-align: center; padding: 40px;">
 
             <div style="font-size: 5rem;">🏆</div>
 
-            <h2 style="margin: 20px 0;">הבנת ${currentTopic}!</h2>
+            <h2>${userData.name}, ${userData.gender === 'girl' ? 'סיימת' : 'סיימת'} ${userData.currentTopic}!</h2>
 
-            <p style="color: #a78bfa; font-size: 1.2rem;">סיימת 5 שלבים בהצלחה</p>
+            <p style="color: #a78bfa; font-size: 1.2rem; margin: 20px 0;">
 
-            <button onclick="startOver()" 
+                ${userData.gender === 'girl' ? 'את מדהימה' : 'אתה מדהים'}! 
 
-                    style="width: 100%; padding: 16px; background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+                ${userData.gender === 'girl' ? 'למדת' : 'למדת'} כבר ${userData.topicsLearned} נושאים!
 
-                           border: none; border-radius: 12px; color: white; font-size: 1.1rem; 
+            </p>
 
-                           font-weight: 600; cursor: pointer; margin-top: 30px;">
+            <button onclick="startNewTopic()" class="next-btn">
 
-                📚 ללמוד נושא נוסף
+                📚 ${userData.gender === 'girl' ? 'בואי' : 'בוא'} נלמד עוד משהו
 
             </button>
 
+            ${userData.topicsLearned > 2 ? `
+
+                <p style="margin-top: 20px; color: rgba(255,255,255,0.6);">
+
+                    💜 ${userData.gender === 'girl' ? 'עזרת' : 'עזרת'} לי להיות מסביר טוב יותר
+
+                </p>
+
+            ` : ''}
+
         </div>
+
+    `;
+
+    
+
+    // Check for milestone
+
+    if (userData.topicsLearned === 5) {
+
+        showMilestone();
+
+    }
+
+}
+
+
+
+// Show milestone
+
+function showMilestone() {
+
+    setTimeout(() => {
+
+        const div = document.createElement('div');
+
+        div.innerHTML = `
+
+            <div style="
+
+                position: fixed;
+
+                inset: 0;
+
+                background: rgba(139, 92, 246, 0.95);
+
+                display: flex;
+
+                align-items: center;
+
+                justify-content: center;
+
+                z-index: 9999;
+
+            ">
+
+                <div style="text-align: center; color: white; padding: 40px;">
+
+                    <h2 style="font-size: 2rem; margin-bottom: 20px;">
+
+                        🎉 ${userData.name}, רגע מיוחד!
+
+                    </h2>
+
+                    <p style="font-size: 1.3rem; margin-bottom: 30px;">
+
+                        ${userData.gender === 'girl' ? 'למדת' : 'למדת'} 5 נושאים!<br>
+
+                        ${userData.gender === 'girl' ? 'את עוזרת' : 'אתה עוזר'} לילדים אחרים להבין מתמטיקה
+
+                    </p>
+
+                    <button onclick="this.parentElement.parentElement.remove()" 
+
+                            style="padding: 16px 32px; background: white; color: #8b5cf6; 
+
+                                   border: none; border-radius: 12px; font-size: 1.1rem; 
+
+                                   font-weight: 600; cursor: pointer;">
+
+                        💜 תודה!
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        `;
+
+        document.body.appendChild(div);
+
+    }, 1000);
+
+}
+
+
+
+// Start new topic
+
+function startNewTopic() {
+
+    userData.currentStage = 1;
+
+    userData.explanationCount = 0;
+
+    document.getElementById('learningStep').classList.add('hidden');
+
+    document.getElementById('topicStep').classList.remove('hidden');
+
+}
+
+
+
+// Fallback content
+
+function displayFallbackContent() {
+
+    const content = document.getElementById('learningContent');
+
+    const stage = userData.currentStage;
+
+    
+
+    const fallbacks = {
+
+        1: `${userData.name}, ${userData.currentTopic} זה קל!`,
+
+        2: `${userData.gender === 'girl' ? 'תראי' : 'תראה'}, ככה זה עובד...`,
+
+        3: 'הטריק הסודי הוא...',
+
+        4: `עכשיו ${userData.gender === 'girl' ? 'תנסי' : 'תנסה'}: 2+2=?`,
+
+        5: 'אתגר אחרון: 3+3=?'
+
+    };
+
+    
+
+    content.innerHTML = `
+
+        <h3>${getStageTitle()}</h3>
+
+        <p>${fallbacks[stage]}</p>
+
+        <button onclick="nextStage()" class="next-btn">
+
+            ${getNextButtonText()}
+
+        </button>
 
     `;
 
@@ -470,23 +750,54 @@ function showSuccess() {
 
 
 
-function startOver() {
+// Initialize on load
 
-    currentStage = 1;  // Reset stage
+window.addEventListener('DOMContentLoaded', () => {
 
-    explanationCount = 0;
+    // Load topics learned count
 
-    currentGrade = '';
+    const topicsLearned = localStorage.getItem('topicsLearned');
 
-    currentTopic = '';
+    if (topicsLearned) {
+
+        userData.topicsLearned = parseInt(topicsLearned) || 0;
+
+    }
 
     
 
-    document.getElementById('resultStep').classList.add('hidden');
+    // Check if returning user
 
-    document.getElementById('topicStep').classList.add('hidden');
+    const saved = localStorage.getItem('userData');
 
-    document.getElementById('gradeStep').classList.remove('hidden');
+    if (saved) {
 
-}
+        const savedData = JSON.parse(saved);
 
+        userData = { ...userData, ...savedData };
+
+        
+
+        if (userData.name) {
+
+            // Returning user - show welcome back
+
+            document.getElementById('childName').value = userData.name;
+
+            if (userData.gender) {
+
+                selectGender(userData.gender);
+
+            }
+
+            if (userData.interests) {
+
+                document.getElementById('interests').value = userData.interests;
+
+            }
+
+        }
+
+    }
+
+});
