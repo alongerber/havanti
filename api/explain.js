@@ -1,98 +1,30 @@
-// Vercel Node.js Handler
-// This file handles the pedagogical logic, method cycling, and interaction with Claude.
-
 export default async function handler(req, res) {
+    // 1. Verify Method
     if (req.method !== 'POST') {
-        return res.status(405).json({ message: 'Method not allowed' });
+        return res.status(405).json({ 
+            content: "🚨 Error: Method must be POST", 
+            isQuestion: false, 
+            visual: "❌" 
+        });
     }
 
     try {
-        const { name, topic, stage, interests, gender } = req.body;
+        // 2. Debug API Key (Don't log the full key, just presence)
         const apiKey = process.env.ANTHROPIC_API_KEY;
-
-        // --- 1. Content Guardrails (Validation) ---
-        const topicRules = {
-            'שברים': {
-                keywords: ['שברים', 'חלק', 'שלם'],
-                mustInclude: ['חלק', 'שלם', 'למחוק', 'לחלק'],
-                forbidden: ['מונה', 'מכנה', 'כפל', 'עשרוני'],
-                validEmojis: ['🍕', '🍫', '🍰', '🥧'],
-            },
-            'כפל': {
-                keywords: ['כפל', 'פעמים', 'לוח הכפל'],
-                mustInclude: ['קבוצות', 'פעמים', 'לחבר שוב ושוב'],
-                forbidden: ['מכפלה', 'חילוק', 'גורם'],
-                validEmojis: ['📦', '🍎', '⭐', '🎁'],
-            },
-            'general': { mustInclude: [], forbidden: [], validEmojis: ['✨', '🚀', '💡'] }
-        };
-
-        function getTopicRule(t) {
-            for (const key in topicRules) {
-                if (t && (t.includes(key) || topicRules[key].keywords?.some(k => t.includes(k)))) {
-                    return topicRules[key];
-                }
-            }
-            return topicRules['general'];
-        }
-
-        const role = gender === 'girl' ? 'Exploreress' : 'Explorer';
-        const rules = getTopicRule(topic);
-        const isQuestion = stage >= 4;
-
-        // --- 2. Super Prompt Construction (Pedagogy) ---
-        let stageInstruction = "";
-        let exampleOutput = "";
-
-        switch (stage) {
-            case 1: // The Story
-                stageInstruction = `GOAL: Connect "${topic}" to the user's interest: "${interests}". Create a short adventure story. Do NOT explain the math yet. Focus on the PROBLEM. MUST USE words: ${rules.mustInclude.join(', ')}. FORBIDDEN words: ${rules.forbidden.join(', ')}.`;
-                exampleOutput = `Example: "קפטן! יש לנו פיצה אחת ענקית ו-4 חברים רעבים. איך נחלק אותה?"`;
-                break;
-
-            case 2: // Visual Model
-                stageInstruction = `GOAL: Create a visual mental model. Describe a pattern using emojis ONLY from this list: ${rules.validEmojis.join(' ')}.`;
-                exampleOutput = `Example: "תאר לעצמך 3 קופסאות: 📦🍎 + 📦🍎 + 📦🍎"`;
-                break;
-
-            case 3: // Secret Rule
-                stageInstruction = `GOAL: Reveal the "Secret Trick". Teach the rule simply using "Top/Bottom" instead of jargon. Frame it as a cheat code.`;
-                exampleOutput = `Example: "הסוד הוא פשוט: המספר למטה אומר כמה חתכנו!"`;
-                break;
-
-            case 4: // Practice
-            case 5: // Challenge
-                stageInstruction = `GOAL: Ask a specific gamified question related to "${interests}". The question MUST require a specific short answer.`;
-                exampleOutput = `Example: "כדי לפתוח את השער, כמה זה $$2 \\times 5$$?"`;
-                break;
-        }
-
-        const systemPrompt = `
-        ROLE: You are "Captain Click", an Indiana Jones-style math explorer.
-        USER: ${name} (${role}). INTERESTS: ${interests}. TOPIC: ${topic}.
         
-        INSTRUCTION: ${stageInstruction}
-        EXAMPLE: ${exampleOutput}
-
-        STRICT RULES:
-        1. Language: Hebrew (Natural, energetic, for kids).
-        2. Math Format: ALWAYS use LaTeX for numbers (e.g., $$1+1=2$$).
-        3. Output: VALID JSON ONLY. No extra text.
-
-        JSON STRUCTURE:
-        {
-            "content": "Main text here...",
-            "visual": "Emoji pattern or short visual text",
-            "isQuestion": ${isQuestion},
-            "correctAnswer": "${isQuestion ? 'Answer Here' : ''}",
-            "hint": "${isQuestion ? 'Hint Here' : ''}",
-            "nextButtonText": "${stage < 4 ? 'המשך בהרפתקה' : ''}"
+        if (!apiKey) {
+            throw new Error("MISSING API KEY: The variable 'ANTHROPIC_API_KEY' is not set in Vercel.");
         }
-        `;
+        if (!apiKey.startsWith("sk-")) {
+            throw new Error("INVALID API KEY FORMAT: Key must start with 'sk-'. Check for extra spaces or quotes.");
+        }
 
-        if (!apiKey) throw new Error('Missing API Key');
+        const body = await req.body;
+        const { name, topic, stage, interests } = body;
 
-        // --- 3. API Call ---
+        // 3. Make the Request
+        console.log("Sending request to Anthropic...");
+        
         const response = await fetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
             headers: {
@@ -103,38 +35,49 @@ export default async function handler(req, res) {
             body: JSON.stringify({
                 model: 'claude-3-5-sonnet-20241022',
                 max_tokens: 450,
-                messages: [{ role: 'user', content: systemPrompt }]
+                messages: [{ 
+                    role: 'user', 
+                    content: `Explain ${topic} simply to ${name} (Interest: ${interests}). Return JSON: { "content": "text", "isQuestion": false, "visual": "emoji" }` 
+                }]
             })
         });
 
-        const data = await response.json();
-        
-        if (data.error) {
-            console.error('Anthropic API Error:', data.error);
-            throw new Error(data.error.message);
+        // 4. Handle API Errors
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`ANTHROPIC ERROR (${response.status}): ${errorText}`);
         }
 
-        // --- 4. Response Parsing ---
-        let text = data.content[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
-        const parsedData = JSON.parse(text);
+        const data = await response.json();
+        
+        // 5. Parse Response
+        let text = data.content[0].text;
+        const jsonStart = text.indexOf('{');
+        const jsonEnd = text.lastIndexOf('}');
+        if (jsonStart !== -1 && jsonEnd !== -1) {
+            text = text.substring(jsonStart, jsonEnd + 1);
+        }
 
+        let parsedData;
+        try {
+            parsedData = JSON.parse(text);
+        } catch (e) {
+            throw new Error(`INVALID JSON RECEIVED: ${text.substring(0, 100)}...`);
+        }
+
+        // Success
         res.status(200).json(parsedData);
 
     } catch (error) {
-        console.error('API Logic Error:', error);
+        console.error('DEBUG ERROR:', error);
         
-        // Fallback to prevent crashing
-        const topic = req.body.topic || '';
-        let fallbackMsg = "המצפן איבד את הצפון! בוא ננסה שוב.";
-        
-        if (topic.includes('שבר')) fallbackMsg = "פיצה שנחתכת לחלקים שווים. זה הרעיון בשברים!";
-        
+        // RETURN THE REAL ERROR TO THE UI
         res.status(200).json({
-            content: fallbackMsg + " (נסה לרענן)",
-            visual: "🧭❓",
+            content: `🛑 **שגיאה טכנית (צילום מסך למפתח):**\n\n${error.message}`,
+            visual: "🐛",
             isQuestion: false,
             correctAnswer: "",
-            hint: "",
+            hint: "בדוק את ההגדרות ב-Vercel",
             nextButtonText: "נסה שוב"
         });
     }
