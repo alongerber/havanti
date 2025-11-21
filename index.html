@@ -6,699 +6,47 @@
 
     <meta charset="UTF-8">
 
+    <!-- v3.0 AAA UPDATE VERIFIED -->
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>הבנתי! - המסביר האישי שלך</title>
+    <title>קפטן קליק 🚀</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
+
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
 
     <style>
 
-        * {
+        :root { --primary: #8b5cf6; --bg: #0a0a0a; --text: #f3f4f6; }
 
-            margin: 0;
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; padding: 20px; min-height: 100vh; direction: rtl; }
 
-            padding: 0;
+        body::before { content: ''; position: fixed; inset: 0; background: radial-gradient(circle at 20% 50%, rgba(139,92,246,0.2), transparent 50%); z-index: -1; }
 
-            box-sizing: border-box;
+        .container { width: 100%; max-width: 500px; background: rgba(20,20,20,0.9); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
 
-        }
+        .step.hidden { display: none; }
 
-        
+        input, textarea { width: 100%; padding: 15px; background: rgba(139,92,246,0.1); border: 2px solid rgba(139,92,246,0.3); border-radius: 12px; color: white; margin-bottom: 15px; }
 
-        body {
+        button { width: 100%; padding: 15px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.3s; color: white; margin-bottom: 10px; }
 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        .start-btn, .next-btn { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
 
-            background: #0a0a0a;
+        .check-btn { background: linear-gradient(135deg, #10b981, #059669); }
 
-            color: white;
+        .hint-btn { background: #f59e0b; }
 
-            min-height: 100vh;
+        .topic-btn { background: rgba(255,255,255,0.1); }
 
-            display: flex;
+        .topic-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-            align-items: center;
+        .explanation-box { background: rgba(139,92,246,0.1); padding: 20px; border-radius: 16px; line-height: 1.6; }
 
-            justify-content: center;
-
-            padding: 20px;
-
-            direction: rtl;
-
-        }
-
-        
-
-        body::before {
-
-            content: '';
-
-            position: fixed;
-
-            inset: 0;
-
-            background: radial-gradient(circle at 20% 50%, rgba(139, 92, 246, 0.3) 0%, transparent 50%),
-
-                        radial-gradient(circle at 80% 50%, rgba(236, 72, 153, 0.3) 0%, transparent 50%);
-
-            z-index: -1;
-
-        }
-
-        
-
-        .container {
-
-            width: 100%;
-
-            max-width: 500px;
-
-            background: rgba(18, 18, 18, 0.9);
-
-            backdrop-filter: blur(20px);
-
-            border: 1px solid rgba(255, 255, 255, 0.1);
-
-            border-radius: 24px;
-
-            padding: 40px;
-
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-
-        }
-
-        
-
-        h1 {
-
-            font-size: 2.5rem;
-
-            text-align: center;
-
-            margin-bottom: 8px;
-
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-
-            -webkit-background-clip: text;
-
-            -webkit-text-fill-color: transparent;
-
-            font-weight: 800;
-
-        }
-
-        
-
-        .subtitle {
-
-            text-align: center;
-
-            color: rgba(255, 255, 255, 0.7);
-
-            margin-bottom: 32px;
-
-            font-size: 1.1rem;
-
-        }
-
-        
-
-        .step {
-
-            animation: slideIn 0.4s ease;
-
-        }
-
-        
-
-        .step.hidden {
-
-            display: none;
-
-        }
-
-        
-
-        @keyframes slideIn {
-
-            from { opacity: 0; transform: translateY(20px); }
-
-            to { opacity: 1; transform: translateY(0); }
-
-        }
-
-        
-
-        /* Welcome Screen Styles */
-
-        .welcome-input {
-
-            width: 100%;
-
-            padding: 16px;
-
-            background: rgba(139, 92, 246, 0.1);
-
-            border: 2px solid rgba(139, 92, 246, 0.3);
-
-            border-radius: 12px;
-
-            color: white;
-
-            font-size: 1.1rem;
-
-            margin-bottom: 16px;
-
-            text-align: center;
-
-            transition: all 0.3s;
-
-        }
-
-        
-
-        .welcome-input:focus {
-
-            outline: none;
-
-            border-color: #8b5cf6;
-
-            background: rgba(139, 92, 246, 0.15);
-
-            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
-
-        }
-
-        
-
-        .welcome-input::placeholder {
-
-            color: rgba(255, 255, 255, 0.4);
-
-        }
-
-        
-
-        .gender-buttons {
-
-            display: grid;
-
-            grid-template-columns: 1fr 1fr;
-
-            gap: 16px;
-
-            margin: 24px 0;
-
-        }
-
-        
-
-        .gender-btn {
-
-            padding: 20px;
-
-            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(139, 92, 246, 0.1));
-
-            border: 2px solid transparent;
-
-            border-radius: 16px;
-
-            color: white;
-
-            font-size: 1.2rem;
-
-            cursor: pointer;
-
-            transition: all 0.3s;
-
-        }
-
-        
-
-        .gender-btn:hover {
-
-            border-color: #8b5cf6;
-
-            transform: translateY(-2px);
-
-        }
-
-        
-
-        .gender-btn.selected {
-
-            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-
-            border-color: transparent;
-
-        }
-
-        
-
-        .interests-textarea {
-
-            width: 100%;
-
-            padding: 16px;
-
-            background: rgba(139, 92, 246, 0.1);
-
-            border: 2px solid rgba(139, 92, 246, 0.3);
-
-            border-radius: 12px;
-
-            color: white;
-
-            font-size: 1rem;
-
-            margin-bottom: 24px;
-
-            resize: none;
-
-            font-family: inherit;
-
-            transition: all 0.3s;
-
-        }
-
-        
-
-        .interests-textarea:focus {
-
-            outline: none;
-
-            border-color: #8b5cf6;
-
-            background: rgba(139, 92, 246, 0.15);
-
-        }
-
-        
-
-        .start-btn {
-
-            width: 100%;
-
-            padding: 18px;
-
-            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-
-            border: none;
-
-            border-radius: 16px;
-
-            color: white;
-
-            font-size: 1.2rem;
-
-            font-weight: 600;
-
-            cursor: pointer;
-
-            transition: all 0.3s;
-
-        }
-
-        
-
-        .start-btn:hover {
-
-            transform: translateY(-2px);
-
-            box-shadow: 0 20px 40px -12px rgba(139, 92, 246, 0.5);
-
-        }
-
-        
-
-        .start-btn:disabled {
-
-            opacity: 0.5;
-
-            cursor: not-allowed;
-
-        }
-
-        
-
-        /* Grade and Topic Buttons */
-
-        .grade-buttons {
-
-            display: grid;
-
-            grid-template-columns: repeat(3, 1fr);
-
-            gap: 16px;
-
-        }
-
-        
-
-        button {
-
-            padding: 20px;
-
-            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(139, 92, 246, 0.1));
-
-            border: 1px solid rgba(139, 92, 246, 0.3);
-
-            border-radius: 16px;
-
-            color: white;
-
-            font-size: 1.2rem;
-
-            font-weight: 600;
-
-            cursor: pointer;
-
-            transition: all 0.3s;
-
-        }
-
-        
-
-        button:hover {
-
-            background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(139, 92, 246, 0.2));
-
-            border-color: #8b5cf6;
-
-            transform: translateY(-2px);
-
-            box-shadow: 0 10px 25px -5px rgba(139, 92, 246, 0.3);
-
-        }
-
-        
-
-        .topic-buttons {
-
-            display: grid;
-
-            grid-template-columns: repeat(2, 1fr);
-
-            gap: 12px;
-
-            max-height: 400px;
-
-            overflow-y: auto;
-
-            padding-right: 8px;
-
-        }
-
-        
-
-        .topic-btn {
-
-            padding: 16px;
-
-            font-size: 1rem;
-
-        }
-
-        
-
-        /* Progress Bar */
-
-        .progress-container {
-
-            display: flex;
-
-            gap: 8px;
-
-            margin-bottom: 24px;
-
-        }
-
-        
-
-        .progress-step {
-
-            flex: 1;
-
-            height: 6px;
-
-            background: rgba(255, 255, 255, 0.1);
-
-            border-radius: 3px;
-
-            transition: all 0.3s;
-
-        }
-
-        
-
-        .progress-step.active {
-
-            background: linear-gradient(90deg, #8b5cf6, #ec4899);
-
-        }
-
-        
-
-        /* Learning Content */
-
-        .explanation-box {
-
-            background: rgba(139, 92, 246, 0.1);
-
-            border: 1px solid rgba(139, 92, 246, 0.2);
-
-            border-radius: 16px;
-
-            padding: 24px;
-
-            margin-bottom: 24px;
-
-            font-size: 1.15rem;
-
-            line-height: 1.8;
-
-            direction: rtl;
-
-            text-align: right;
-
-            unicode-bidi: embed;
-
-        }
-
-        
-
-        .visual-example {
-
-            background: rgba(0, 0, 0, 0.3);
-
-            border-radius: 12px;
-
-            padding: 20px;
-
-            margin: 16px 0;
-
-            text-align: center;
-
-            font-size: 2rem;
-
-            letter-spacing: 8px;
-
-            direction: ltr;
-
-            unicode-bidi: isolate;
-
-        }
-
-        
-
-        /* Numbers stay LTR */
-
-        .math-expression {
-
-            direction: ltr;
-
-            display: inline-block;
-
-            font-family: 'Courier New', monospace;
-
-            background: rgba(139, 92, 246, 0.1);
-
-            padding: 2px 8px;
-
-            border-radius: 4px;
-
-            margin: 0 4px;
-
-        }
-
-        
-
-        .answer-input {
-
-            width: 100%;
-
-            padding: 16px;
-
-            background: rgba(139, 92, 246, 0.1);
-
-            border: 2px solid rgba(139, 92, 246, 0.3);
-
-            border-radius: 12px;
-
-            color: white;
-
-            font-size: 1.2rem;
-
-            text-align: center;
-
-            margin: 20px 0;
-
-            direction: ltr;
-
-        }
-
-        
-
-        .check-btn {
-
-            width: 100%;
-
-            padding: 16px;
-
-            background: linear-gradient(135deg, #10b981, #059669);
-
-            border: none;
-
-            border-radius: 12px;
-
-            color: white;
-
-            font-size: 1.1rem;
-
-            font-weight: 600;
-
-            cursor: pointer;
-
-        }
-
-        
-
-        .next-btn {
-
-            width: 100%;
-
-            padding: 16px;
-
-            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-
-            border: none;
-
-            border-radius: 12px;
-
-            color: white;
-
-            font-size: 1.1rem;
-
-            font-weight: 600;
-
-            cursor: pointer;
-
-            margin-top: 20px;
-
-        }
-
-        
-
-        .loading {
-
-            text-align: center;
-
-            padding: 40px;
-
-        }
-
-        
-
-        .loading-spinner {
-
-            width: 40px;
-
-            height: 40px;
-
-            border: 3px solid rgba(139, 92, 246, 0.2);
-
-            border-top-color: #8b5cf6;
-
-            border-radius: 50%;
-
-            margin: 0 auto 16px;
-
-            animation: spin 0.8s linear infinite;
-
-        }
-
-        
-
-        @keyframes spin {
-
-            to { transform: rotate(360deg); }
-
-        }
-
-        
-
-        @keyframes shake {
-
-            0%, 100% { transform: translateX(0); }
-
-            25% { transform: translateX(-10px); }
-
-            75% { transform: translateX(10px); }
-
-        }
-
-        
-
-        @keyframes pop {
-
-            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
-
-            50% { transform: translate(-50%, -50%) scale(1.1); }
-
-            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-
-        }
-
-        
-
-        .privacy-note {
-
-            text-align: center;
-
-            color: rgba(255, 255, 255, 0.4);
-
-            font-size: 0.9rem;
-
-            margin-top: 24px;
-
-        }
-
-        
-
-        .personal-greeting {
-
-            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1));
-
-            border: 1px solid rgba(16, 185, 129, 0.3);
-
-            border-radius: 12px;
-
-            padding: 16px;
-
-            margin-bottom: 24px;
-
-            text-align: center;
-
-        }
+        #feedbackArea { margin-top: 15px; text-align: center; font-weight: bold; }
 
     </style>
 
@@ -708,143 +56,65 @@
 
     <div class="container">
 
-        <!-- Welcome Screen -->
-
         <div id="welcomeStep" class="step">
 
-            <h1>👋 שלום!</h1>
+            <h1>קפטן קליק 🚀</h1>
 
-            <p class="subtitle">אני דני, המסביר האישי שלך</p>
+            <input type="text" id="childName" placeholder="שם הקפטן/ית?">
 
-            
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
 
-            <input type="text" id="childName" placeholder="איך קוראים לך?" 
+                <button onclick="setGender('boy')" id="boyBtn" style="background:#333">👦 קפטן</button>
 
-                   class="welcome-input" maxlength="20">
-
-            
-
-            <div class="gender-buttons">
-
-                <button class="gender-btn" onclick="selectGender('boy')" id="boyBtn">
-
-                    👦 ילד
-
-                </button>
-
-                <button class="gender-btn" onclick="selectGender('girl')" id="girlBtn">
-
-                    👧 ילדה
-
-                </button>
+                <button onclick="setGender('girl')" id="girlBtn" style="background:#333">👧 קפטנית</button>
 
             </div>
 
-            
+            <textarea id="interests" placeholder="מה את/ה אוהב/ת?"></textarea>
 
-            <textarea id="interests" 
+            <button onclick="startApp()" class="start-btn">התחל משימה</button>
 
-                      placeholder="ספר/י לי משהו עליך... מה אתה/את אוהב/ת? באיזה משחק אתה/את משחק/ת?" 
-
-                      class="interests-textarea" 
-
-                      rows="3"></textarea>
-
-            
-
-            <button onclick="startJourney()" class="start-btn" id="startBtn" disabled>
-
-                💜 בוא/י נתחיל את המסע!
-
-            </button>
-
-            
-
-            <p class="privacy-note">
-
-                🔒 המידע נשמר רק במכשיר שלך
-
-            </p>
+            <p style="text-align:center; opacity:0.5; font-size:0.8rem;">v3.0 AAA Verified</p>
 
         </div>
-
-        
-
-        <!-- Grade Selection -->
 
         <div id="gradeStep" class="step hidden">
 
-            <div id="personalGreeting" class="personal-greeting"></div>
+            <h2>בחר כיתה</h2>
 
-            <h2>באיזו כיתה?</h2>
+            <div style="display:grid; gap:10px;">
 
-            <div class="grade-buttons">
+                <button onclick="setGrade('1-2')" class="topic-btn">א׳-ב׳</button>
 
-                <button onclick="selectGrade('1-2')">א׳-ב׳</button>
+                <button onclick="setGrade('3-4')" class="topic-btn">ג׳-ד׳</button>
 
-                <button onclick="selectGrade('3-4')">ג׳-ד׳</button>
-
-                <button onclick="selectGrade('5-6')">ה׳-ו׳</button>
+                <button onclick="setGrade('5-6')" class="topic-btn">ה׳-ו׳</button>
 
             </div>
 
         </div>
 
-        
-
-        <!-- Topic Selection -->
-
         <div id="topicStep" class="step hidden">
 
-            <h2>מה נלמד היום?</h2>
+            <h2>בחר משימה</h2>
 
             <div id="topicButtons" class="topic-buttons"></div>
 
         </div>
 
-        
-
-        <!-- Learning Screen -->
-
         <div id="learningStep" class="step hidden">
-
-            <div class="progress-container">
-
-                <div class="progress-step" id="step1"></div>
-
-                <div class="progress-step" id="step2"></div>
-
-                <div class="progress-step" id="step3"></div>
-
-                <div class="progress-step" id="step4"></div>
-
-                <div class="progress-step" id="step5"></div>
-
-            </div>
 
             <div id="learningContent" class="explanation-box"></div>
 
         </div>
 
-        
-
-        <!-- Loading -->
-
         <div id="loadingStep" class="step hidden">
 
-            <div class="loading">
-
-                <div class="loading-spinner"></div>
-
-                <p>מכין הסבר מיוחד בשבילך...</p>
-
-            </div>
+            <h3 style="text-align:center;">🚀 קפטן קליק מפענח...</h3>
 
         </div>
 
     </div>
-
-    
 
     <script src="app.js"></script>
 
