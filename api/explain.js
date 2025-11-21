@@ -1,152 +1,310 @@
-export default async function handler(req, res) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    
+export const config = {
+
+    runtime: 'edge',
+
+};
+// --- 1. חוקי תוכן וולידציה (Guardrails) ---
+
+const topicRules = {
+
+    'שברים': {
+
+        keywords: ['שברים', 'חלק', 'שלם'],
+
+        mustInclude: ['חלק', 'שלם', 'למחוק', 'לחלק'],
+
+        forbidden: ['מונה', 'מכנה', 'כפל', 'עשרוני'], // מילים "מפחידות" אסורות בשלבים ראשונים
+
+        validEmojis: ['🍕', '🍫', '🍰', '🥧'],
+
+        fallback: "דמיין פיצה עגולה וטעימה שמחלקים לחברים."
+
+    },
+
+    'כפל': {
+
+        keywords: ['כפל', 'פעמים', 'לוח הכפל'],
+
+        mustInclude: ['קבוצות', 'פעמים', 'לחבר שוב ושוב'],
+
+        forbidden: ['מכפלה', 'חילוק', 'גורם'],
+
+        validEmojis: ['📦', '🍎', '⭐', '🎁'],
+
+        fallback: "כפל זה כמו קסם שמשכפל חפצים!"
+
+    },
+
+    'חיבור': {
+
+        keywords: ['חיבור', 'ועוד'],
+
+        mustInclude: ['ביחד', 'סך הכל', 'להוסיף'],
+
+        forbidden: ['כפל', 'חיסור', 'פחות'],
+
+        validEmojis: ['🎈', '⚽', '🍬'],
+
+        fallback: "נחבר הכל יחד לערימה אחת גדולה."
+
+    },
+
+    // ברירת מחדל לנושאים כלליים
+
+    'general': {
+
+        mustInclude: [],
+
+        forbidden: [],
+
+        validEmojis: ['✨', '🚀', '💡'],
+
+        fallback: "בוא נגלה את הסוד של המספרים."
+
+    }
+
+};
+
+function getTopicRule(topic) {
+
+    for (const key in topicRules) {
+
+        if (topic.includes(key) || topicRules[key].keywords?.some(k => topic.includes(k))) {
+
+            return topicRules[key];
+
+        }
+
+    }
+
+    return topicRules['general'];
+
+}
+
+export default async function handler(req) {
+
     if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
+
+        return new Response(JSON.stringify({ message: 'Method not allowed' }), { status: 405 });
+
     }
-    
-    const body = req.body;
-    const { name = 'קצין', topic = '', stage = 1, interests = 'משחקים', gender = 'boy', grade = '1-2' } = body;
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    
-    // Strict isQuestion logic: Stages 1-3 = explanations, Stages 4-5 = questions
-    const isQuestion = stage >= 4;
-    
-    // Keyword matching for topics
-    const topicRules = {
-        'שברים': {
-            mustInclude: ['חלק', 'שלם', 'לחלק'],
-            forbidden: ['כפל', 'חילוק'],
-            validEmojis: ['🍕', '🍰', '🍫'],
-            maxNumber: 15
-        },
-        'כפל': {
-            mustInclude: ['פעמים', 'להכפיל', 'קבוצות'],
-            forbidden: ['חצי', 'רבע', 'שברים'],
-            validEmojis: ['⭐', '🎯', '📦'],
-            maxNumber: 144
-        },
-        'חיבור': {
-            mustInclude: ['ועוד', 'ביחד', 'סך הכל'],
-            forbidden: ['כפל', 'חילוק'],
-            validEmojis: ['🍎', '🍭', '🎈'],
-            maxNumber: 100
-        },
-        'חיסור': {
-            mustInclude: ['פחות', 'נשאר', 'הורדנו'],
-            forbidden: ['כפל', 'חילוק'],
-            validEmojis: ['🍪', '🎈', '🚗'],
-            maxNumber: 100
-        }
-    };
-    
-    // Find matching rule by keyword
-    const baseRule = Object.keys(topicRules).find(keyword => topic.includes(keyword));
-    const rules = baseRule ? topicRules[baseRule] : { 
-        mustInclude: [], 
-        forbidden: [], 
-        validEmojis: ['📚'], 
-        maxNumber: 100 
-    };
-    
-    const prompt = `
-    You are "Captain Click" 🚀, a space math adventurer teaching a kid named ${name} (${gender === 'girl' ? 'girl' : 'boy'}) in grade ${grade}.
-    
-    Current Topic: ${topic}.
-    Stage: ${stage}/5.
-    Kid's Interests: ${interests} (MUST integrate these into the explanation!).
-    
-    Tone: Energetic, fun, encouraging, dramatic, use emojis. Speak in Hebrew (עברית).
-    
-    TASK:
-    ${!isQuestion ? 
-        `Explain the concept simply. Use a metaphor or story related to the interests (${interests}). Do NOT ask a question to solve yet. This is an explanation stage.` : 
-        `Ask a specific practice question based on what was learned. The question must be solvable and have a clear answer.`}
-    
-    IMPORTANT RULES:
-    1. Use LaTeX for ALL math expressions (e.g., $$1 + 2 = 3$$ or $\\frac{1}{2}$).
-    2. If Stage is 4 or 5, you MUST provide a specific "correctAnswer" (simple number or short word, NO complex expressions).
-    3. Output STRICTLY valid JSON only, no markdown code blocks.
-    4. Must include words: ${rules.mustInclude.join(', ')}
-    5. Must NOT include words: ${rules.forbidden.join(', ')}
-    6. Use emojis from: ${rules.validEmojis.join(' ')}
-    7. Numbers must not exceed ${rules.maxNumber}
-    
-    Output Schema (STRICT JSON, no markdown):
-    {
-        "content": "The explanation or question text in Hebrew with LaTeX math",
-        "isQuestion": ${isQuestion},
-        "correctAnswer": "${isQuestion ? 'SIMPLE_NUMBER_OR_WORD' : ''}",
-        "hint": "${isQuestion ? 'A helpful hint in Hebrew' : ''}",
-        "nextButtonText": "${!isQuestion ? 'הבנתי, המשך!' : 'בדוק תשובה'}"
-    }
-    `;
-    
+
     try {
-        if (!apiKey) throw new Error('No API key');
-        
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01'
-            },
-            body: JSON.stringify({
-                model: 'claude-3-5-sonnet-20241022',
-                max_tokens: 400,
-                temperature: 0.7,
-                messages: [{ role: 'user', content: prompt }]
-            })
-        });
-        
-        const data = await response.json();
-        let text = data.content?.[0]?.text || '{}';
-        
-        // Clean markdown code blocks
-        text = text.replace(/```json/g, '').replace(/```/g, '').trim();
-        
-        // Parse JSON
-        let json;
-        try {
-            json = JSON.parse(text);
-        } catch (parseError) {
-            console.error('JSON Parse Error:', parseError);
-            // Fallback if parsing fails
-            json = {
-                content: isQuestion ? 
-                    `קפטן קליק שואל: כמה זה $$2 + 2$$?` : 
-                    `קפטן קליק מסביר: ${topic} זה קל! בוא נבין יחד.`,
-                isQuestion: isQuestion,
-                correctAnswer: isQuestion ? '4' : '',
-                hint: isQuestion ? 'חשבו על האצבעות' : '',
-                nextButtonText: !isQuestion ? 'הבנתי, המשך!' : 'בדוק תשובה'
-            };
+
+        const body = await req.json();
+
+        const { name, topic, stage, interests, gender } = body;
+
+        const apiKey = process.env.ANTHROPIC_API_KEY;
+
+        const role = gender === 'girl' ? 'Exploreress' : 'Explorer';
+
+        const rules = getTopicRule(topic);
+
+        const isQuestion = stage >= 4;
+
+        // --- 2. בניית פרומפט ממוקד לשלב הנוכחי בלבד ---
+
+        let stageInstruction = "";
+
+        let exampleOutput = "";
+
+        switch (stage) {
+
+            case 1: // The Story (Why)
+
+                stageInstruction = `GOAL: Connect "${topic}" to the user's interest: "${interests}".
+
+                Create a short adventure story (2-3 sentences). Do NOT explain the math yet. Focus on the PROBLEM that needs solving.
+
+                MUST USE words: ${rules.mustInclude.join(', ')}.
+
+                FORBIDDEN words: ${rules.forbidden.join(', ')}.`;
+
+                
+
+                exampleOutput = `Example for "Fractions" + "Pizza": "קפטן! יש לנו פיצה אחת ענקית ו-4 חברים רעבים. איך נחלק אותה שווה בשווה בלי שמישהו יישאר רעב? זו תעלומה!"`;
+
+                break;
+
+            case 2: // Visual Mental Model
+
+                stageInstruction = `GOAL: Create a visual mental model for "${topic}".
+
+                Describe a pattern using emojis or simple objects.
+
+                Visual Field: Use ONLY these emojis: ${rules.validEmojis.join(' ')}.`;
+
+                
+
+                exampleOutput = `Example for "Multiplication": Content: "תאר לעצמך 3 קופסאות, ובכל אחת 2 תפוחים." Visual: "📦🍎🍎 + 📦🍎🍎 + 📦🍎🍎"`;
+
+                break;
+
+            case 3: // The Secret Rule
+
+                stageInstruction = `GOAL: Reveal the "Secret Trick" (The Algorithm).
+
+                Teach the rule simply. Use "Top/Bottom" instead of technical jargon.
+
+                Frame it as a cheat code for the adventure.`;
+
+                
+
+                exampleOutput = `Example: "הסוד הוא פשוט: המספר למטה אומר לכמה חתיכות חתכנו, והמספר למעלה אומר כמה אכלנו!"`;
+
+                break;
+
+            case 4: // Practice
+
+            case 5: // Boss Battle
+
+                stageInstruction = `GOAL: Ask a specific gamified question.
+
+                Context: "${interests}".
+
+                The question MUST require a specific short answer (number or word).`;
+
+                
+
+                exampleOutput = `Example: "כדי לפתוח את השער למבצר, עליך לפתור: כמה זה $$2 \\times 5$$?"`;
+
+                break;
+
         }
+
+        const systemPrompt = `
+
+        ROLE: You are "Captain Click", an Indiana Jones-style math explorer.
+
+        USER: ${name} (${role}). INTERESTS: ${interests}. TOPIC: ${topic}.
+
         
-        // Ensure strict format compliance
-        const result = {
-            content: json.content || (isQuestion ? `שאלה על ${topic}` : `הסבר על ${topic}`),
-            isQuestion: isQuestion,
-            correctAnswer: isQuestion ? (json.correctAnswer || '4') : '',
-            hint: isQuestion ? (json.hint || 'נסה לחשוב') : '',
-            nextButtonText: json.nextButtonText || (!isQuestion ? 'הבנתי, המשך!' : 'בדוק תשובה')
-        };
+
+        ${stageInstruction}
+
         
-        return res.status(200).json(result);
-        
-    } catch (error) {
-        console.error('API Error:', error);
-        
-        // Fallback JSON if AI fails
-        return res.status(200).json({
-            content: isQuestion ? 
-                `קפטן קליק שואל: כמה זה $$2 + 2$$?` : 
-                `קפטן קליק נתקל במטאור! בוא ננסה שוב. ${topic} זה קל!`,
-            isQuestion: isQuestion,
-            correctAnswer: isQuestion ? '4' : '',
-            hint: isQuestion ? 'חשבו על האצבעות' : '',
-            nextButtonText: !isQuestion ? 'נסה שוב' : 'בדוק תשובה'
+
+        ${exampleOutput}
+
+        STRICT RULES:
+
+        1. Language: Hebrew (Natural, energetic, for kids).
+
+        2. Math Format: ALWAYS use LaTeX for numbers (e.g., $$1+1=2$$).
+
+        3. Output: VALID JSON ONLY. No extra text.
+
+        JSON STRUCTURE:
+
+        {
+
+            "content": "Main text here...",
+
+            "visual": "Emoji pattern or short visual text",
+
+            "isQuestion": ${isQuestion},
+
+            "correctAnswer": "${isQuestion ? 'Answer Here' : ''}",
+
+            "hint": "${isQuestion ? 'Hint Here' : ''}",
+
+            "nextButtonText": "${stage < 4 ? 'המשך בהרפתקה' : ''}"
+
+        }
+
+        `;
+
+        if (!apiKey) throw new Error('Missing API Key');
+
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+
+            method: 'POST',
+
+            headers: {
+
+                'Content-Type': 'application/json',
+
+                'x-api-key': apiKey,
+
+                'anthropic-version': '2023-06-01'
+
+            },
+
+            body: JSON.stringify({
+
+                model: 'claude-3-5-sonnet-20241022',
+
+                max_tokens: 450,
+
+                messages: [{ role: 'user', content: systemPrompt }]
+
+            })
+
         });
+
+        const data = await response.json();
+
+        let text = data.content[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
+
+        const parsedData = JSON.parse(text);
+
+        // --- 3. Validation Layer (הגנה מפני הזיות) ---
+
+        // אם זה שלב הסבר (1-3), ודא שיש קשר לנושא
+
+        if (!isQuestion) {
+
+            // בדיקה בסיסית: האם יש מילים אסורות?
+
+            const hasForbidden = rules.forbidden.some(word => parsedData.content.includes(word));
+
+            
+
+            if (hasForbidden) {
+
+                console.warn("Validation Failed: AI used forbidden jargon.");
+
+                // אפשר כאן להחליף ל-Fallback או לתקן, כרגע נשאיר ורק נתריע ללוג
+
+                // במערכת מחמירה יותר - נחזיר כאן תשובה מוכנה מראש
+
+            }
+
+        }
+
+        return new Response(JSON.stringify(parsedData), {
+
+            status: 200, 
+
+            headers: { 'Content-Type': 'application/json' }
+
+        });
+
+    } catch (error) {
+
+        console.error('API Logic Error:', error);
+
+        
+
+        // Fallback חירום
+
+        return new Response(JSON.stringify({
+
+            content: "המפה נקרעה בטעות! אבל אל דאגה, קפטן קליק תמיד מוצא דרך. בוא ננסה שוב.",
+
+            visual: "🗺️❌",
+
+            isQuestion: false,
+
+            correctAnswer: "",
+
+            hint: "",
+
+            nextButtonText: "נסה שוב"
+
+        }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+
     }
+
 }
