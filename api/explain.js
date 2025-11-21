@@ -1,138 +1,98 @@
 export default async function handler(req, res) {
+    // 1. Basic Validation
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Method not allowed' });
     }
 
-    try {
-        const { name, topic, stage, interests, gender } = req.body;
-        const apiKey = process.env.ANTHROPIC_API_KEY;
+    const { name, topic, stage, interests, gender } = req.body;
+    const apiKey = process.env.ANTHROPIC_API_KEY;
 
-        // --- 1. Content Guardrails (Validation) ---
-        const topicRules = {
-            'שברים': {
-                keywords: ['שברים', 'חלק', 'שלם'],
-                mustInclude: ['חלק', 'שלם', 'למחוק', 'לחלק'],
-                forbidden: ['מונה', 'מכנה', 'כפל', 'עשרוני'],
-                validEmojis: ['🍕', '🍫', '🍰', '🥧'],
-            },
-            'כפל': {
-                keywords: ['כפל', 'פעמים', 'לוח הכפל'],
-                mustInclude: ['קבוצות', 'פעמים', 'לחבר שוב ושוב'],
-                forbidden: ['מכפלה', 'חילוק', 'גורם'],
-                validEmojis: ['📦', '🍎', '⭐', '🎁'],
-            },
-            'general': { mustInclude: [], forbidden: [], validEmojis: ['✨', '🚀', '💡'] }
-        };
-
-        function getTopicRule(t) {
-            for (const key in topicRules) {
-                if (t && (t.includes(key) || topicRules[key].keywords?.some(k => t.includes(k)))) {
-                    return topicRules[key];
-                }
-            }
-            return topicRules['general'];
-        }
-
-        const role = gender === 'girl' ? 'Exploreress' : 'Explorer';
-        const rules = getTopicRule(topic);
-        const isQuestion = stage >= 4;
-
-        // --- 2. Super Prompt Construction (Pedagogy) ---
-        let stageInstruction = "";
-        let exampleOutput = "";
-
-        switch (stage) {
-            case 1: // The Story
-                stageInstruction = `GOAL: Connect "${topic}" to the user's interest: "${interests}". Create a short adventure story. Do NOT explain the math yet. Focus on the PROBLEM. MUST USE words: ${rules.mustInclude.join(', ')}. FORBIDDEN words: ${rules.forbidden.join(', ')}.`;
-                exampleOutput = `Example: "קפטן! יש לנו פיצה אחת ענקית ו-4 חברים רעבים. איך נחלק אותה?"`;
-                break;
-
-            case 2: // Visual Model
-                stageInstruction = `GOAL: Create a visual mental model. Describe a pattern using emojis ONLY from this list: ${rules.validEmojis.join(' ')}.`;
-                exampleOutput = `Example: "תאר לעצמך 3 קופסאות: 📦🍎 + 📦🍎 + 📦🍎"`;
-                break;
-
-            case 3: // Secret Rule
-                stageInstruction = `GOAL: Reveal the "Secret Trick". Teach the rule simply using "Top/Bottom" instead of jargon. Frame it as a cheat code.`;
-                exampleOutput = `Example: "הסוד הוא פשוט: המספר למטה אומר כמה חתכנו!"`;
-                break;
-
-            case 4: // Practice
-            case 5: // Challenge
-                stageInstruction = `GOAL: Ask a specific gamified question related to "${interests}". The question MUST require a specific short answer.`;
-                exampleOutput = `Example: "כדי לפתוח את השער, כמה זה $$2 \\times 5$$?"`;
-                break;
-        }
-
-        const systemPrompt = `
-        ROLE: You are "Captain Click", an Indiana Jones-style math explorer.
-        USER: ${name} (${role}). INTERESTS: ${interests}. TOPIC: ${topic}.
-        
-        INSTRUCTION: ${stageInstruction}
-        EXAMPLE: ${exampleOutput}
-
-        STRICT RULES:
-        1. Language: Hebrew (Natural, energetic, for kids).
-        2. Math Format: ALWAYS use LaTeX for numbers (e.g., $$1+1=2$$).
-        3. Output: VALID JSON ONLY. No extra text.
-
-        JSON STRUCTURE:
-        {
-            "content": "Main text here...",
-            "visual": "Emoji pattern or short visual text",
-            "isQuestion": ${isQuestion},
-            "correctAnswer": "${isQuestion ? 'Answer Here' : ''}",
-            "hint": "${isQuestion ? 'Hint Here' : ''}",
-            "nextButtonText": "${stage < 4 ? 'המשך בהרפתקה' : ''}"
-        }
-        `;
-
-        if (!apiKey) throw new Error('Missing API Key');
-
-        // --- 3. API Call (CORRECTED MODEL NAME) ---
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01'
-            },
-            body: JSON.stringify({
-                model: 'claude-3-5-sonnet-20240620', // FIXED: Stable version
-                max_tokens: 450,
-                messages: [{ role: 'user', content: systemPrompt }]
-            })
-        });
-
-        const data = await response.json();
-        
-        if (data.error) {
-            console.error('Anthropic API Error:', data.error);
-            throw new Error(data.error.message);
-        }
-
-        // --- 4. Response Parsing ---
-        let text = data.content[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
-        const parsedData = JSON.parse(text);
-
-        res.status(200).json(parsedData);
-
-    } catch (error) {
-        console.error('API Logic Error:', error);
-        
-        // Fallback to prevent crashing
-        const topic = req.body.topic || '';
-        let fallbackMsg = "המצפן איבד את הצפון! בוא ננסה שוב.";
-        
-        if (topic.includes('שבר')) fallbackMsg = "פיצה שנחתכת לחלקים שווים. זה הרעיון בשברים!";
-        
-        res.status(200).json({
-            content: `שגיאה: ${error.message || 'Unknown error'} (נסה לרענן)`,
-            visual: "🧭❓",
+    if (!apiKey) {
+        console.error("Missing API Key");
+        return res.status(500).json({ 
+            content: "שגיאת מערכת: מפתח API חסר בהגדרות השרת.", 
             isQuestion: false,
-            correctAnswer: "",
-            hint: "",
-            nextButtonText: "נסה שוב"
+            visual: "⚠️"
         });
     }
+
+    // 2. Pedagogical Setup (Captain Click)
+    const role = gender === 'girl' ? 'Exploreress' : 'Explorer';
+    const isQuestion = stage >= 4;
+
+    // Topic Logic
+    const topicRules = {
+        'שברים': { must: ['חלק', 'שלם'], forbid: ['מונה', 'מכנה'], emojis: ['🍕', '🍫'] },
+        'כפל': { must: ['פעמים', 'קבוצות'], forbid: ['מכפלה'], emojis: ['📦', '⭐'] },
+        'general': { must: [], forbid: [], emojis: ['✨', '🚀'] }
+    };
+    const getRule = (t) => Object.values(topicRules).find(r => t.includes(Object.keys(topicRules).find(k => t.includes(k)))) || topicRules['general'];
+    const rules = getRule(topic);
+
+    // Stage Instruction
+    let instruction = "";
+    if (stage === 1) instruction = `Story Mode: Explain the PROBLEM "${topic}" solves using "${interests}". Do NOT explain the math yet.`;
+    else if (stage === 2) instruction = `Visual Mode: Describe a mental image using these emojis: ${rules.emojis.join(' ')}.`;
+    else if (stage === 3) instruction = `Secret Trick: Reveal the rule simply. Use "Top/Bottom" instead of jargon.`;
+    else instruction = `Challenge Mode: Ask a specific question related to "${interests}". Require a short numerical answer.`;
+
+    const systemPrompt = `
+    ROLE: Captain Click (Indiana Jones style Math Explorer).
+    CONTEXT: User ${name} (${role}). Interests: ${interests}. Topic: ${topic}. Stage: ${stage}/5.
+    GOAL: ${instruction}
+    CONSTRAINTS: Hebrew language. Fun, energetic tone. LaTeX for numbers ($$1+1$$).
+    OUTPUT: Valid JSON only.
+    JSON SCHEMA: { "content": "string", "visual": "string", "isQuestion": ${isQuestion}, "correctAnswer": "string", "hint": "string", "nextButtonText": "string" }
+    `;
+
+    // 3. The "Bulletproof" Model Chain
+    // It will try these in order. Since you have credits, the first one should work.
+    const models = [
+        'claude-3-5-sonnet-20241022', // Newest & Best
+        'claude-3-5-sonnet-20240620', // Stable
+        'claude-3-sonnet-20240229',   // Legacy
+        'claude-3-haiku-20240307'     // Fast Backup
+    ];
+
+    for (const model of models) {
+        try {
+            console.log(`Attempting model: ${model}...`);
+            const response = await fetch('https://api.anthropic.com/v1/messages', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': apiKey,
+                    'anthropic-version': '2023-06-01'
+                },
+                body: JSON.stringify({
+                    model: model,
+                    max_tokens: 600,
+                    messages: [{ role: 'user', content: systemPrompt }]
+                })
+            });
+
+            if (!response.ok) {
+                console.warn(`Model ${model} failed: ${response.status}`);
+                continue; // Try next model immediately
+            }
+
+            const data = await response.json();
+            const text = data.content[0].text.replace(/```json|```/g, '').trim();
+            
+            return res.status(200).json(JSON.parse(text));
+
+        } catch (e) {
+            console.error(`Error with ${model}:`, e);
+        }
+    }
+
+    // 4. Ultimate Fallback (Only if EVERYTHING fails)
+    return res.status(200).json({
+        content: "המצפן שלי לא מוצא קליטה כרגע. בוא ננסה שוב!",
+        visual: "🧭❓",
+        isQuestion: false,
+        correctAnswer: "",
+        hint: "",
+        nextButtonText: "נסה שוב"
+    });
 }
