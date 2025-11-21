@@ -16,7 +16,17 @@ let userData = {
 
     explanationCount: 0,
 
-    topicsLearned: 0
+    topicsLearned: 0,
+
+    // הוספת הדמות החדשה
+
+    persona: {
+
+        name: 'קפטן קליק 🚀',
+
+        title: 'מומחה הרפתקאות המתמטיקה'
+
+    }
 
 };
 
@@ -106,6 +116,62 @@ const topics = {
 
 
 
+// --- KaTeX & Rendering Functions ---
+
+
+
+// פונקציה לעיבוד KaTeX (LaTeX to Math)
+
+function renderMathInElement(element) {
+
+    // Check if KaTeX auto-render extension is loaded
+
+    if (typeof window.renderMathInElement !== 'undefined') {
+
+        try {
+
+            window.renderMathInElement(element, {
+
+                delimiters: [
+
+                    {left: "$$", right: "$$", display: true}, // Block math
+
+                    {left: "$", right: "$", display: false}   // Inline math
+
+                ],
+
+                throwOnError: false
+
+            });
+
+        } catch (e) {
+
+            console.log('KaTeX not available, skipping math rendering');
+
+        }
+
+    }
+
+}
+
+
+
+// פונקציה לעיבוד טקסט מעורב (הסרה של פונקציית formatMixedContent הישנה)
+
+function formatContentWithMath(text) {
+
+    // KaTeX מטפל בזה אוטומטית, אין צורך בשימוש במחלקת math-expression
+
+    return text;
+
+}
+
+
+
+// --- UI & Flow Control ---
+
+
+
 // Gender selection
 
 function selectGender(gender) {
@@ -128,7 +194,11 @@ function checkIfReady() {
 
     const name = document.getElementById('childName').value.trim();
 
-    const ready = name && userData.gender;
+    // דרישה: חובה למלא שם, מין ותחומי עניין (3 מילים לפחות)
+
+    const interestsCount = document.getElementById('interests').value.trim().split(/\s+/).filter(Boolean).length;
+
+    const ready = name && userData.gender && interestsCount >= 3;
 
     document.getElementById('startBtn').disabled = !ready;
 
@@ -136,9 +206,13 @@ function checkIfReady() {
 
 
 
-// Name input listener
+// Input listeners
 
 document.getElementById('childName')?.addEventListener('input', checkIfReady);
+
+document.getElementById('interests')?.addEventListener('input', checkIfReady);
+
+
 
 
 
@@ -198,9 +272,9 @@ function showPersonalGreeting() {
 
     document.getElementById('personalGreeting').innerHTML = `
 
-        ${greeting} ${userData.name}! 🌟<br>
+        ${greeting} קפטן ${userData.name}! 🌟<br>
 
-        ${genderText} להרפתקת למידה?
+        ${genderText} למשימה הבאה?
 
     `;
 
@@ -278,6 +352,20 @@ async function startLearning() {
 
     
 
+    // אינדיקטור אישי (סעיף 2.4)
+
+    const loadingMessage = document.querySelector('#loadingStep p');
+
+    if (loadingMessage) {
+
+        loadingMessage.textContent = 
+
+            `${userData.persona.name} מפענח בשבילך את קוד הסודי של ${userData.currentTopic}...`;
+
+    }
+
+    
+
     // Update progress bar
 
     updateProgressBar();
@@ -330,13 +418,13 @@ async function startLearning() {
 
             const methodNames = {
 
-                'story_based': '📖 סיפור',
+                'story_based': '📖 סיפור הרפתקאות',
 
-                'visual_pattern': '👁️ תמונה',
+                'visual_pattern': '👁️ דפוס קוסמי',
 
-                'logical_rule': '🧠 חוק',
+                'logical_rule': '🧠 קוד סודי',
 
-                'game_challenge': '🎮 משחק'
+                'game_challenge': '🎮 משימת אימון'
 
             };
 
@@ -354,7 +442,7 @@ async function startLearning() {
 
     } catch (error) {
 
-        // Fallback content
+        // Fallback content on error
 
         displayFallbackContent();
 
@@ -384,45 +472,11 @@ function updateProgressBar() {
 
 
 
-// Format mixed Hebrew/number content
-
-function formatMixedContent(text) {
-
-    // Wrap math expressions in spans
-
-    return text.replace(
-
-        /(\d+\s*[+\-×÷]\s*\d+\s*=\s*\d*)/g,
-
-        '<span class="math-expression">$1</span>'
-
-    );
-
-}
-
-
-
-// Display content
+// Display content - לוגיקה מעודכנת להצגת שאלה/הסבר
 
 function displayContent(data) {
 
-    const content = document.getElementById('learningContent');
-
-    
-
-    // Format the content
-
-    if (data.content) {
-
-        data.content = formatMixedContent(data.content);
-
-    }
-
-    if (data.hint) {
-
-        data.hint = formatMixedContent(data.hint);
-
-    }
+    const contentBox = document.getElementById('learningContent');
 
     
 
@@ -434,19 +488,23 @@ function displayContent(data) {
 
                      padding: 4px 12px; border-radius: 20px; font-size: 0.9rem; 
 
-                     margin-bottom: 12px;">${data.methodDisplay}</div>` : '';
+                     margin-bottom: 12px; font-weight: 700;">${data.methodDisplay}</div>` : '';
 
     
 
+    let htmlContent = ``;
+
+
+
     if (data.isQuestion) {
 
-        // Question stage
+        // Question stage (Stage 4 & 5)
 
-        content.innerHTML = `
+        htmlContent = `
 
             ${methodBadge}
 
-            <h3>🎯 ${userData.name}, עכשיו ${userData.gender === 'girl' ? 'תורך' : 'תורך'}!</h3>
+            <h3>🎯 קפטן ${userData.name}, עכשיו תורך!</h3>
 
             <p style="font-size: 1.3rem; margin: 20px 0;">${data.content}</p>
 
@@ -454,23 +512,31 @@ function displayContent(data) {
 
             ${data.hint ? `<p style="color: #a78bfa;">💡 רמז: ${data.hint}</p>` : ''}
 
-            <input type="text" id="answerInput" class="answer-input" 
+            
 
-                   placeholder="${userData.gender === 'girl' ? 'התשובה שלך...' : 'התשובה שלך...'}">
+            <div class="question-container">
 
-            <button onclick="checkAnswer('${data.correctAnswer}')" class="check-btn">
+                <p style="font-size: 1.1rem; margin-bottom: 15px;">אנא הקלד/י את הפתרון שלך:</p>
 
-                ✅ ${userData.gender === 'girl' ? 'בדקי' : 'בדוק'} תשובה
+                <input type="text" id="answerInput" class="answer-input" 
 
-            </button>
+                       placeholder="${userData.gender === 'girl' ? 'הקוד הסודי שלך...' : 'הקוד הסודי שלך...'}">
+
+                <button onclick="checkAnswer('${data.correctAnswer}')" class="check-btn">
+
+                    ✅ ${userData.gender === 'girl' ? 'בדיקת קוד' : 'בדיקת קוד'}
+
+                </button>
+
+            </div>
 
         `;
 
     } else {
 
-        // Explanation stage
+        // Explanation stage (Stage 1, 2, 3) - אין שאלות, רק הסברים
 
-        content.innerHTML = `
+        htmlContent = `
 
             ${methodBadge}
 
@@ -492,6 +558,16 @@ function displayContent(data) {
 
     
 
+    contentBox.innerHTML = htmlContent;
+
+    
+
+    // KaTeX rendering - חובה לאחר הוספת ה-HTML ל-DOM
+
+    renderMathInElement(contentBox);
+
+    
+
     userData.explanationCount++;
 
 }
@@ -504,15 +580,15 @@ function getStageTitle() {
 
     const titles = {
 
-        1: `💡 ${userData.name}, בוא ${userData.gender === 'girl' ? 'נבין' : 'נבין'} את הרעיון`,
+        1: `💡 ${userData.name}, מפענח/ת את הרעיון המרכזי`,
 
-        2: `👀 ${userData.gender === 'girl' ? 'תראי' : 'תראה'} איך זה עובד`,
+        2: `👀 ${userData.gender === 'girl' ? 'צופה' : 'צופה'} בדפוס הקוסמי`,
 
-        3: `🔮 הסוד שלא ${userData.gender === 'girl' ? 'ידעת' : 'ידעת'}`,
+        3: `🔮 מגלה/ת את הקוד הסודי של קפטן קליק`,
 
-        4: `🎯 ${userData.gender === 'girl' ? 'מוכנה' : 'מוכן'} לנסות?`,
+        4: `🎯 ${userData.gender === 'girl' ? 'מוכנה' : 'מוכן'} למשימת אימון?`,
 
-        5: `🚀 אתגר אחרון!`
+        5: `🚀 אתגר ניצחון אחרון!`
 
     };
 
@@ -528,15 +604,15 @@ function getNextButtonText() {
 
     const texts = {
 
-        1: `${userData.gender === 'girl' ? 'הבנתי' : 'הבנתי'}! ${userData.gender === 'girl' ? 'תראי' : 'תראה'} לי עוד`,
+        1: `${userData.gender === 'girl' ? 'פוענח' : 'פוענח'}! ${userData.gender === 'girl' ? 'תראי' : 'תראה'} לי את הדפוס`,
 
-        2: 'וואו! זה קל',
+        2: 'וואו! זה קסם',
 
-        3: 'עכשיו זה ברור!',
+        3: 'עכשיו זה ברור! ממשיכ/ה לאימון',
 
         4: `${userData.gender === 'girl' ? 'מוכנה' : 'מוכן'}!`,
 
-        5: 'לסיכום'
+        5: 'לסיכום המשימה'
 
     };
 
@@ -550,7 +626,9 @@ function getNextButtonText() {
 
 function checkAnswer(correct) {
 
-    const answer = document.getElementById('answerInput').value.trim();
+    const answerInput = document.getElementById('answerInput');
+
+    const answer = answerInput.value.trim();
 
     
 
@@ -558,15 +636,35 @@ function checkAnswer(correct) {
 
         showSuccess();
 
+        // מיקרו-אינטראקציה (סעיף 2.5) - הוספת דופק ירוק
+
+        answerInput.style.transition = 'background-color 0.5s';
+
+        answerInput.style.backgroundColor = '#10b98150';
+
+        
+
         setTimeout(nextStage, 2000);
 
     } else {
 
-        document.getElementById('answerInput').style.animation = 'shake 0.5s';
+        answerInput.style.animation = 'shake 0.5s';
+
+        // מיקרו-אינטראקציה (סעיף 2.5) - שגיאה
+
+        answerInput.style.transition = 'border-color 0.5s';
+
+        answerInput.style.borderColor = '#ef4444';
+
+        
 
         setTimeout(() => {
 
-            document.getElementById('answerInput').style.animation = '';
+            answerInput.style.animation = '';
+
+            answerInput.style.borderColor = 'rgba(139, 92, 246, 0.3)';
+
+            answerInput.style.backgroundColor = 'rgba(139, 92, 246, 0.1)';
 
         }, 500);
 
@@ -582,13 +680,13 @@ function showSuccess() {
 
     const messages = [
 
-        `${userData.name}, ${userData.gender === 'girl' ? 'את גאונה' : 'אתה גאון'}!`,
+        `קפטן ${userData.name}, ${userData.gender === 'girl' ? 'את גאונה קוסמית' : 'אתה גאון קוסמי'}!`,
 
-        `מעולה ${userData.name}!`,
+        `מעולה ${userData.name}! המשימה הושלמה!`,
 
-        `${userData.gender === 'girl' ? 'צדקת' : 'צדקת'} בול!`,
+        `${userData.gender === 'girl' ? 'צדקת' : 'צדקת'} בול! הקוד פוענח!`,
 
-        `וואו ${userData.name}!`
+        `וואו ${userData.name}! ${userData.persona.name} גאה בך!`
 
     ];
 
@@ -623,6 +721,8 @@ function showSuccess() {
         z-index: 1000;
 
         animation: pop 0.5s ease;
+
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
 
     `;
 
@@ -672,19 +772,19 @@ function completeTopic() {
 
             <div style="font-size: 5rem;">🏆</div>
 
-            <h2>${userData.name}, ${userData.gender === 'girl' ? 'סיימת' : 'סיימת'} ${userData.currentTopic}!</h2>
+            <h2>קפטן ${userData.name}, ${userData.gender === 'girl' ? 'סיימת' : 'סיימת'} את המשימה: ${userData.currentTopic}!</h2>
 
             <p style="color: #a78bfa; font-size: 1.2rem; margin: 20px 0;">
 
                 ${userData.gender === 'girl' ? 'את מדהימה' : 'אתה מדהים'}! 
 
-                ${userData.gender === 'girl' ? 'למדת' : 'למדת'} כבר ${userData.topicsLearned} נושאים!
+                ${userData.gender === 'girl' ? 'פענחת' : 'פענחת'} כבר ${userData.topicsLearned} קודים סודיים!
 
             </p>
 
             <button onclick="startNewTopic()" class="next-btn">
 
-                📚 ${userData.gender === 'girl' ? 'בואי' : 'בוא'} נלמד עוד משהו
+                📚 ${userData.gender === 'girl' ? 'בואי' : 'בוא'} לפענח עוד משימה
 
             </button>
 
@@ -692,7 +792,7 @@ function completeTopic() {
 
                 <p style="margin-top: 20px; color: rgba(255,255,255,0.6);">
 
-                    💜 ${userData.gender === 'girl' ? 'עזרת' : 'עזרת'} לי להיות מסביר טוב יותר
+                    💜 ${userData.gender === 'girl' ? 'עזרת' : 'עזרת'} לי להיות מומחה טוב יותר!
 
                 </p>
 
@@ -716,7 +816,7 @@ function completeTopic() {
 
 
 
-// Show milestone
+// Show milestone - (אותה לוגיקה)
 
 function showMilestone() {
 
@@ -748,15 +848,15 @@ function showMilestone() {
 
                     <h2 style="font-size: 2rem; margin-bottom: 20px;">
 
-                        🎉 ${userData.name}, רגע מיוחד!
+                        🎉 קפטן ${userData.name}, רגע מיוחד!
 
                     </h2>
 
                     <p style="font-size: 1.3rem; margin-bottom: 30px;">
 
-                        ${userData.gender === 'girl' ? 'למדת' : 'למדת'} 5 נושאים!<br>
+                        ${userData.gender === 'girl' ? 'פענחת' : 'פענחת'} 5 קודים סודיים!<br>
 
-                        ${userData.gender === 'girl' ? 'את עוזרת' : 'אתה עוזר'} לילדים אחרים להבין מתמטיקה
+                        ${userData.gender === 'girl' ? 'את עוזרת' : 'אתה עוזר'} לקצינים אחרים להבין מתמטיקה
 
                     </p>
 
@@ -802,7 +902,7 @@ function startNewTopic() {
 
 
 
-// Fallback content
+// Fallback content - לוגיקה מעודכנת להצגת השאלה
 
 function displayFallbackContent() {
 
@@ -814,35 +914,77 @@ function displayFallbackContent() {
 
     const fallbacks = {
 
-        1: `${userData.name}, ${userData.currentTopic} זה קל!`,
+        1: `${userData.name}, ${userData.currentTopic} זה קל! הקוד הסודי הוא...`,
 
         2: `${userData.gender === 'girl' ? 'תראי' : 'תראה'}, ככה זה עובד...`,
 
         3: 'הטריק הסודי הוא...',
 
-        4: `עכשיו ${userData.gender === 'girl' ? 'תנסי' : 'תנסה'}: 2+2=?`,
+        4: `משימת אימון: $2+2=?$`, // שימוש ב-LaTeX
 
-        5: 'אתגר אחרון: 3+3=?'
+        5: `אתגר ניצחון: $3+3=?$` // שימוש ב-LaTeX
 
     };
 
     
 
-    content.innerHTML = `
+    const isQuestion = stage >= 4;
+
+    
+
+    let htmlContent = `
 
         <h3>${getStageTitle()}</h3>
 
         <p>${fallbacks[stage]}</p>
 
-        <button onclick="nextStage()" class="next-btn">
-
-            ${getNextButtonText()}
-
-        </button>
-
     `;
 
+
+
+    if (isQuestion) {
+
+        htmlContent += `
+
+            <div class="question-container">
+
+                <p style="font-size: 1.1rem; margin-bottom: 15px;">אנא הקלד/י את הפתרון שלך:</p>
+
+                <input type="text" id="answerInput" class="answer-input" placeholder="התשובה כאן">
+
+                <button onclick="checkAnswer('${stage === 4 ? '4' : '6'}')" class="check-btn">
+
+                    ✅ ${userData.gender === 'girl' ? 'בדיקת קוד' : 'בדיקת קוד'}
+
+                </button>
+
+            </div>
+
+        `;
+
+    } else {
+
+         htmlContent += `
+
+            <button onclick="nextStage()" class="next-btn">
+
+                ${getNextButtonText()}
+
+            </button>
+
+        `;
+
+    }
+
+    
+
+    content.innerHTML = htmlContent;
+
+    renderMathInElement(content); // עיבוד KaTeX
+
 }
+
+
 
 
 
@@ -895,5 +1037,15 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
     }
+
+
+
+    // הפעלת KaTeX עבור תוכן סטטי
+
+    document.body.onload = function() {
+
+        renderMathInElement(document.body);
+
+    };
 
 });
