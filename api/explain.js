@@ -16,83 +16,117 @@ export default async function handler(req, res) {
         });
     }
 
-    // 2. Pedagogical Setup (Captain Click)
+    // 2. Context Setup
     const role = gender === 'girl' ? 'Exploreress' : 'Explorer';
     const isQuestion = stage >= 4;
 
-    // Topic Logic
+    // Topic Guardrails
     const topicRules = {
-        'שברים': { must: ['חלק', 'שלם'], forbid: ['מונה', 'מכנה'], emojis: ['🍕', '🍫'] },
-        'כפל': { must: ['פעמים', 'קבוצות'], forbid: ['מכפלה'], emojis: ['📦', '⭐'] },
-        'general': { must: [], forbid: [], emojis: ['✨', '🚀'] }
+        'שברים': { context: 'Dividing a whole into parts (Pizza, Chocolate)', forbid: ['מונה', 'מכנה'] },
+        'כפל': { context: 'Repeated addition, groups of items', forbid: ['מכפלה', 'גורמים'] },
+        'general': { context: 'Logic and problem solving', forbid: [] }
     };
-    const getRule = (t) => Object.values(topicRules).find(r => t.includes(Object.keys(topicRules).find(k => t.includes(k)))) || topicRules['general'];
+    
+    const getRule = (t) => {
+        if (t.includes('שבר')) return topicRules['שברים'];
+        if (t.includes('כפל')) return topicRules['כפל'];
+        return topicRules['general'];
+    };
     const rules = getRule(topic);
 
-    // Stage Instruction
+    // Stage Instruction (The Pedagogical Brain)
     let instruction = "";
-    if (stage === 1) instruction = `Story Mode: Explain the PROBLEM "${topic}" solves using "${interests}". Do NOT explain the math yet.`;
-    else if (stage === 2) instruction = `Visual Mode: Describe a mental image using these emojis: ${rules.emojis.join(' ')}.`;
-    else if (stage === 3) instruction = `Secret Trick: Reveal the rule simply. Use "Top/Bottom" instead of jargon.`;
-    else instruction = `Challenge Mode: Ask a specific question related to "${interests}". Require a short numerical answer.`;
+    if (stage === 1) {
+        instruction = `STEP 1: THE HOOK (Story). Create a short, thrilling adventure story involving "${interests}". The character faces a specific problem that requires ${topic} to solve. Do NOT explain the math yet. End with a cliffhanger.`;
 
-    const systemPrompt = `
-    ROLE: Captain Click (Indiana Jones style Math Explorer).
-    CONTEXT: User ${name} (${role}). Interests: ${interests}. Topic: ${topic}. Stage: ${stage}/5.
-    GOAL: ${instruction}
-    CONSTRAINTS: Hebrew language. Fun, energetic tone. LaTeX for numbers ($$1+1$$).
-    OUTPUT: Valid JSON only.
-    JSON SCHEMA: { "content": "string", "visual": "string", "isQuestion": ${isQuestion}, "correctAnswer": "string", "hint": "string", "nextButtonText": "string" }
-    `;
+    } else if (stage === 2) {
+        instruction = `STEP 2: VISUALIZE. Explain the concept using a visual mental model based on "${interests}". Use emojis to "draw" the solution pattern. Keep it very simple.`;
 
-    // 3. The "Bulletproof" Model Chain
-    // It will try these in order. Since you have credits, the first one should work.
-    const models = [
-        'claude-3-5-sonnet-20241022', // Newest & Best
-        'claude-3-5-sonnet-20240620', // Stable
-        'claude-3-sonnet-20240229',   // Legacy
-        'claude-3-haiku-20240307'     // Fast Backup
-    ];
+    } else if (stage === 3) {
+        instruction = `STEP 3: THE SECRET TRICK. Reveal the mathematical rule as a "Cheat Code" or "Map Key". Use simple terms like "Top Number" instead of jargon like "${rules.forbid.join(', ')}".`;
 
-    for (const model of models) {
-        try {
-            console.log(`Attempting model: ${model}...`);
-            const response = await fetch('https://api.anthropic.com/v1/messages', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-api-key': apiKey,
-                    'anthropic-version': '2023-06-01'
-                },
-                body: JSON.stringify({
-                    model: model,
-                    max_tokens: 600,
-                    messages: [{ role: 'user', content: systemPrompt }]
-                })
-            });
+    } else {
+        instruction = `STEP 4/5: THE CHALLENGE. Present a fun, gamified question related to the story. The answer must be a simple number or word.`;
 
-            if (!response.ok) {
-                console.warn(`Model ${model} failed: ${response.status}`);
-                continue; // Try next model immediately
-            }
-
-            const data = await response.json();
-            const text = data.content[0].text.replace(/```json|```/g, '').trim();
-            
-            return res.status(200).json(JSON.parse(text));
-
-        } catch (e) {
-            console.error(`Error with ${model}:`, e);
-        }
     }
 
-    // 4. Ultimate Fallback (Only if EVERYTHING fails)
-    return res.status(200).json({
-        content: "המצפן שלי לא מוצא קליטה כרגע. בוא ננסה שוב!",
-        visual: "🧭❓",
-        isQuestion: false,
-        correctAnswer: "",
-        hint: "",
-        nextButtonText: "נסה שוב"
-    });
+    // 3. The High-Quality System Prompt
+    const systemPrompt = `
+    You are "Captain Click" (קפטן קליק), a world-famous explorer and math mentor.
+    User: ${name} (${role}). Topic: ${topic}. Interest: ${interests}.
+    
+    YOUR MISSION: ${instruction}
+
+    CRITICAL QUALITY GUIDELINES:
+
+    1. **Language:** Hebrew (Native Level). Must be rich, grammatically perfect, and flowing. NO spelling errors (like "בטיח"). NO robotic phrasing.
+
+    2. **Tone:** Enthusiastic, warm, adventurous (Pixar movie style).
+
+    3. **Math:** Wrap ALL numbers and equations in LaTeX format: $$1+1=2$$.
+
+    4. **Context:** Strictly adhere to the context: ${rules.context}.
+
+    5. **Format:** Return ONLY valid JSON.
+
+    JSON OUTPUT STRUCTURE:
+
+    {
+        "content": "The Hebrew text...",
+        "visual": "Creative emoji art (e.g. 🍕+🍕=😋)",
+        "isQuestion": ${isQuestion},
+        "correctAnswer": "${isQuestion ? 'Answer' : ''}",
+        "hint": "${isQuestion ? 'Hint' : ''}",
+        "nextButtonText": "Text for the button"
+    }
+    `;
+
+    try {
+        console.log("Calling Claude 3.5 Sonnet (Stable)...");
+        
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey,
+                'anthropic-version': '2023-06-01'
+            },
+            body: JSON.stringify({
+                model: 'claude-3-5-sonnet-20240620', // Locked on the best stable model
+                max_tokens: 850,
+                temperature: 0.7,
+                messages: [{ role: 'user', content: systemPrompt }]
+            })
+        });
+
+        if (!response.ok) {
+            const errText = await response.text();
+            console.error("Anthropic API Error:", errText);
+            throw new Error(`API Error: ${response.status} - ${errText}`);
+        }
+
+        const data = await response.json();
+        
+        // Robust JSON Parsing
+        let text = data.content[0].text.trim();
+        const jsonStart = text.indexOf('{');
+        const jsonEnd = text.lastIndexOf('}');
+        if (jsonStart !== -1 && jsonEnd !== -1) {
+            text = text.substring(jsonStart, jsonEnd + 1);
+        }
+        
+        return res.status(200).json(JSON.parse(text));
+
+    } catch (e) {
+        console.error("Critical Failure:", e);
+        // Specific error message for the user
+        return res.status(200).json({
+            content: `קפטן, יש הפרעה בתקשורת (${e.message}). בוא ננסה שוב!`,
+            visual: "📡",
+            isQuestion: false,
+            correctAnswer: "",
+            hint: "",
+            nextButtonText: "נסה שוב"
+        });
+    }
 }
