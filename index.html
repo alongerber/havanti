@@ -1,769 +1,482 @@
 <!DOCTYPE html>
-
 <html lang="he" dir="rtl">
-
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
-    <title>קפטן קליק - החוקר 🧭</title>
-
+    <title>מרכז הפיקוד - קפטן קליק</title>
     
-
-    <!-- Fonts & Icons -->
-
-    <link href="https://fonts.googleapis.com/css2?family=Varela+Round&family=Rubik:wght@400;700&display=swap" rel="stylesheet">
-
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    
-
-    <!-- KaTeX -->
-
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
-
-
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
     <style>
-
         :root {
-
-            --primary: #0F766E;    /* Deep Teal */
-
-            --accent: #F59E0B;     /* Gold */
-
-            --bg-dark: #064E3B;    /* Jungle Green */
-
-            --text-light: #ECFDF5; 
-
-            --card-bg: rgba(20, 50, 40, 0.75); /* Dark Glass */
-
-            --border: rgba(255, 255, 255, 0.15);
-
+            --primary: #0F766E;
+            --accent: #F59E0B;
+            --dark: #022C22;
+            --light: #ECFDF5;
+            --glass: rgba(20, 40, 30, 0.6);
+            --glass-border: rgba(255,255,255,0.1);
         }
 
-
-
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
-
-
-        body {
-
-            font-family: 'Varela Round', 'Rubik', sans-serif;
-
-            background-color: var(--bg-dark);
-
-            color: var(--text-light);
-
-            min-height: 100vh;
-
-            display: flex;
-
-            align-items: center;
-
-            justify-content: center;
-
-            overflow-x: hidden;
-
-            /* Topographic Map Pattern */
-
-            background-image: 
-
-                radial-gradient(#ffffff 1px, transparent 1px),
-
-                radial-gradient(#ffffff 1px, transparent 1px);
-
-            background-size: 50px 50px;
-
-            background-position: 0 0, 25px 25px;
-
-            background-color: #042f2e;
-
-            animation: mapMove 60s linear infinite;
-
-        }
-
-
-
-        @keyframes mapMove { from { background-position: 0 0, 25px 25px; } to { background-position: 100px 100px, 125px 125px; } }
-
-
-
-        .app-container {
-
-            width: 95%;
-
-            max-width: 500px;
-
-            min-height: 650px;
-
-            background: var(--card-bg);
-
-            backdrop-filter: blur(15px);
-
-            -webkit-backdrop-filter: blur(15px);
-
-            border: 1px solid var(--border);
-
-            border-radius: 32px;
-
-            padding: 30px;
-
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-
-            position: relative;
-
-            margin-top: 50px;
-
-        }
-
-
-
-        /* Avatar */
-
-        .avatar-container {
-
-            position: absolute;
-
-            top: -60px;
-
-            left: 50%;
-
-            transform: translateX(-50%);
-
-            width: 120px;
-
-            height: 120px;
-
-            border-radius: 50%;
-
-            border: 4px solid var(--accent);
-
-            background: #fff;
-
-            overflow: hidden;
-
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-
-            z-index: 10;
-
-            animation: float 4s ease-in-out infinite;
-
-        }
-
-        .avatar-img { width: 100%; height: 100%; object-fit: cover; }
-
-
-
-        @keyframes float { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-10px); } }
-
-
-
-        h1 { 
-
-            text-align: center; margin-top: 50px; margin-bottom: 10px; 
-
-            font-size: 2rem; color: var(--accent); text-shadow: 0 2px 4px rgba(0,0,0,0.3); 
-
-        }
-
-        .subtitle { text-align: center; color: #A7F3D0; margin-bottom: 30px; font-size: 1rem; opacity: 0.8; }
-
-
-
-        .hidden { display: none !important; }
-
-        .fade-in { animation: fadeIn 0.5s ease forwards; }
-
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-
-
-
-        /* UI Elements */
-
-        input, textarea {
-
-            width: 100%;
-
-            background: rgba(0, 0, 0, 0.3);
-
-            border: 2px solid var(--border);
-
-            color: white;
-
-            padding: 16px;
-
-            border-radius: 16px;
-
-            font-size: 1.1rem;
-
-            font-family: inherit;
-
-            margin-bottom: 15px;
-
-            transition: 0.3s;
-
-        }
-
-        input:focus, textarea:focus { outline: none; border-color: var(--accent); background: rgba(0,0,0,0.5); }
-
-
-
-        .btn {
-
-            width: 100%; padding: 18px; border: none; border-radius: 16px;
-
-            font-size: 1.1rem; font-weight: 700; cursor: pointer;
-
-            transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px;
-
-            color: #064E3B; margin-top: 10px;
-
-            box-shadow: 0 4px 0 rgba(0,0,0,0.2);
-
-        }
-
-        .btn:active { transform: translateY(4px); box-shadow: none; }
-
+        * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
         
-
-        .btn-primary { background: linear-gradient(to bottom, #FCD34D, #F59E0B); }
-
-        .btn-success { background: linear-gradient(to bottom, #6EE7B7, #10B981); }
-
-        .btn-secondary { background: rgba(255,255,255,0.1); color: white; border: 1px solid var(--border); }
-
-
-
-        .grid-select { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-
-        .select-card {
-
-            background: rgba(255,255,255,0.05); border: 2px solid transparent;
-
-            padding: 20px; border-radius: 16px; text-align: center; cursor: pointer; transition: 0.3s;
-
-        }
-
-        .select-card:hover { background: rgba(255,255,255,0.1); }
-
-        .select-card.selected { border-color: var(--accent); background: rgba(245, 158, 11, 0.2); }
-
-        .select-card i { font-size: 1.8rem; margin-bottom: 10px; display: block; color: var(--accent); }
-
-
-
-        .content-box {
-
-            background: rgba(0,0,0,0.25); border-radius: 20px; padding: 25px;
-
-            margin-bottom: 20px; line-height: 1.7; font-size: 1.2rem;
-
-            border: 1px solid var(--border); position: relative;
-
-        }
-
-        .stage-badge {
-
-            position: absolute; top: -12px; right: 20px;
-
-            background: var(--accent); color: #064E3B;
-
-            padding: 4px 12px; border-radius: 12px; font-size: 0.85rem; font-weight: bold;
-
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-
-        }
-
-
-
-        .visual-area {
-
-            text-align: center; 
-            margin: 20px 0;
-            padding: 20px;
+        body {
+            margin: 0; padding: 0;
+            font-family: 'Rubik', sans-serif;
+            background: #022C22;
+            color: white;
+            overflow: hidden; /* For Parallax */
+            height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 200px;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 16px;
-            animation: fadeIn 0.5s ease;
-
         }
 
-        .visual-area svg {
+        /* --- PARALLAX BACKGROUND --- */
+        .scene {
+            position: absolute; top: -5%; left: -5%; width: 110%; height: 110%;
+            display: flex; align-items: center; justify-content: center;
+            z-index: 0;
+        }
+        .layer { position: absolute; width: 100%; height: 100%; background-size: cover; background-position: center; transition: transform 0.1s ease-out; }
+        
+        /* Abstract Jungle Shapes using CSS Gradients */
+        .layer-bg { background: radial-gradient(circle at 50% 50%, #064E3B, #022C22); }
+        .layer-mid { 
+            background-image: radial-gradient(circle at 20% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 40%),
+                              radial-gradient(circle at 80% 20%, rgba(245, 158, 11, 0.1) 0%, transparent 40%);
+        }
+        .layer-particles { background-image: radial-gradient(#fff 1px, transparent 1px); background-size: 60px 60px; opacity: 0.3; }
 
-            max-width: 100%;
-            height: auto;
-            max-height: 300px;
-            width: auto;
-            display: block;
-            margin: 0 auto;
-            animation: bounce 2s infinite;
-
+        /* --- MAIN UI --- */
+        .app-ui {
+            position: relative; z-index: 10;
+            width: 100%; max-width: 480px; height: 90vh;
+            display: flex; flex-direction: column;
+            justify-content: space-between;
         }
 
-        .visual-area:has(svg) {
-
-            background: rgba(15, 118, 110, 0.1);
-            border: 2px solid rgba(20, 184, 166, 0.2);
-
+        /* --- HUD (Top Bar) --- */
+        .hud {
+            display: flex; justify-content: space-between; align-items: center;
+            background: var(--glass); backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            padding: 12px 20px; border-radius: 24px;
+            margin: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            animation: slideDown 0.5s ease-out;
         }
+        @keyframes slideDown { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-
-
-
-        .compass-loader {
-
-            font-size: 4rem; color: var(--accent);
-
-            animation: spinCompass 2s infinite ease-in-out;
-
-            margin-bottom: 20px;
-
+        .hud-level { display: flex; align-items: center; gap: 10px; }
+        .level-badge { 
+            background: var(--accent); color: var(--dark); font-weight: 900; 
+            width: 36px; height: 36px; border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
         }
+        .xp-bar-container { width: 100px; height: 8px; background: rgba(0,0,0,0.5); border-radius: 4px; overflow: hidden; }
+        .xp-bar-fill { height: 100%; background: #10B981; width: 0%; transition: width 1s ease; }
+        
+        .hud-streak { color: #FCD34D; font-weight: bold; display: flex; align-items: center; gap: 5px; }
 
-        @keyframes spinCompass { 0% { transform: rotate(0deg); } 80% { transform: rotate(360deg); } 100% { transform: rotate(360deg); } }
+        /* --- HERO SECTION (Center) --- */
+        .hero-section {
+            text-align: center; flex-grow: 1;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .hero-avatar {
+            width: 180px; height: 180px;
+            border-radius: 50%; border: 6px solid var(--accent);
+            background: white; overflow: hidden;
+            box-shadow: 0 0 40px rgba(245, 158, 11, 0.3);
+            animation: floatHero 4s ease-in-out infinite;
+            position: relative;
+        }
+        .hero-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        
+        @keyframes floatHero { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
 
+        .hero-greeting {
+            margin-top: 20px; background: var(--glass);
+            padding: 10px 25px; border-radius: 20px;
+            border: 1px solid var(--glass-border);
+        }
+        .hero-greeting h2 { margin: 0; font-size: 1.8rem; background: linear-gradient(to right, #fff, #A7F3D0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero-greeting p { margin: 5px 0 0; color: #A7F3D0; font-size: 0.9rem; }
 
+        /* --- ACTION DECK (Bottom) --- */
+        .action-deck {
+            padding: 20px; display: grid; gap: 15px;
+            animation: slideUp 0.5s ease-out;
+        }
+        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-        #feedbackArea { margin-top: 15px; border-radius: 12px; text-align: center; font-weight: bold; padding: 0; overflow: hidden;}
+        .card-btn {
+            background: var(--glass); border: 1px solid var(--glass-border);
+            padding: 20px; border-radius: 20px;
+            display: flex; align-items: center; gap: 20px;
+            cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;
+        }
+        .card-btn:active { transform: scale(0.98); }
+        
+        .card-btn.primary { 
+            background: linear-gradient(135deg, rgba(15, 118, 110, 0.8), rgba(245, 158, 11, 0.2)); 
+            border: 1px solid rgba(245, 158, 11, 0.5);
+        }
+        .card-btn.primary::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            animation: shine 3s infinite;
+        }
+        @keyframes shine { 0% { left: -100%; } 20% { left: 200%; } 100% { left: 200%; } }
 
-        .fb-msg { padding: 15px; animation: fadeIn 0.3s; }
+        .icon-box { 
+            width: 50px; height: 50px; border-radius: 15px; background: rgba(0,0,0,0.3); 
+            display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
+        }
+        .card-info h3 { margin: 0; font-size: 1.2rem; color: white; }
+        .card-info p { margin: 2px 0 0; font-size: 0.85rem; color: #D1FAE5; opacity: 0.8; }
 
-        .fb-success { background: rgba(16, 185, 129, 0.2); color: #6EE7B7; border: 1px solid #10B981; }
+        /* --- SCREENS (Overlay) --- */
+        .screen {
+            position: fixed; inset: 0; background: #022C22; z-index: 100;
+            display: flex; flex-direction: column; padding: 20px;
+            transition: transform 0.3s ease-in-out;
+            transform: translateY(100%); /* Hidden by default */
+        }
+        .screen.active { transform: translateY(0); }
+        
+        .screen-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        .back-btn { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
 
-        .fb-error { background: rgba(239, 68, 68, 0.2); color: #FCA5A5; border: 1px solid #EF4444; }
+        /* Standard Elements for Learning (reused from previous design) */
+        .content-box { background: rgba(255,255,255,0.05); border-radius: 20px; padding: 20px; margin-bottom: 20px; font-size: 1.2rem; line-height: 1.6; border: 1px solid var(--glass-border); }
+        .visual-area svg { width: 100%; height: auto; max-height: 250px; filter: drop-shadow(0 0 10px rgba(0,0,0,0.5)); }
+        .btn-action { width: 100%; padding: 15px; border-radius: 15px; border: none; font-weight: bold; font-size: 1.1rem; cursor: pointer; margin-top: 10px; }
+        .btn-green { background: #10B981; color: white; }
+        .btn-gold { background: #F59E0B; color: #022C22; }
+        
+        input, textarea { width: 100%; padding: 15px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 12px; color: white; font-size: 1.1rem; margin-bottom: 10px; font-family: 'Rubik', sans-serif; }
+        textarea { resize: vertical; min-height: 80px; }
 
+        .grid-topics { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .topic-card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 15px; text-align: center; border: 1px solid transparent; cursor: pointer; transition: all 0.2s; }
+        .topic-card:active { background: var(--primary); border-color: var(--accent); }
+
+        .hidden { display: none; }
+
+        .shake { animation: shake 0.5s; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
     </style>
-
 </head>
-
 <body>
 
-
-
-    <div class="app-container">
-
-        <div class="avatar-container">
-
-            <img src="https://i.imgur.com/58QMFtb.png" alt="Captain Click" class="avatar-img">
-
-        </div>
-
-
-
-        <!-- Step 1: Welcome -->
-
-        <div id="step-welcome" class="fade-in">
-
-            <h1>ברוכים הבאים!</h1>
-
-            <p class="subtitle">מוכנים לצאת להרפתקה ולגלות את סודות המתמטיקה?</p>
-
-            <input type="text" id="inpName" placeholder="איך קוראים לך?">
-
-            <div class="grid-select">
-
-                <div class="select-card" onclick="setGender('boy')" id="btnBoy"><i class="fa-solid fa-hat-cowboy"></i> חוקר</div>
-
-                <div class="select-card" onclick="setGender('girl')" id="btnGirl"><i class="fa-solid fa-hat-cowboy-side"></i> חוקרת</div>
-
-            </div>
-
-            <textarea id="inpInterests" rows="2" placeholder="מה מעניין אותך? (למשל: דינוזאורים, ריקוד, כדורגל...)"></textarea>
-
-            <button class="btn btn-primary" onclick="goToGrade()">התחל מסע <i class="fa-solid fa-map"></i></button>
-
-        </div>
-
-
-
-        <!-- Step 2: Grade -->
-
-        <div id="step-grade" class="hidden">
-
-            <h1>בחר דרגה</h1>
-
-            <div class="grid-select" style="grid-template-columns: 1fr;">
-
-                <div class="select-card" onclick="setGrade('1-2')">כיתות א׳ - ב׳ (מתחילים)</div>
-
-                <div class="select-card" onclick="setGrade('3-4')">כיתות ג׳ - ד׳ (מתקדמים)</div>
-
-                <div class="select-card" onclick="setGrade('5-6')">כיתות ה׳ - ו׳ (מומחים)</div>
-
-            </div>
-
-        </div>
-
-
-
-        <!-- Step 3: Topic -->
-
-        <div id="step-topic" class="hidden">
-
-            <h1>בחר יעד במפה</h1>
-
-            <div id="topicsGrid" class="grid-select"></div>
-
-        </div>
-
-
-
-        <!-- Step 4: Loading -->
-
-        <div id="step-loading" class="hidden" style="text-align: center; padding-top: 40px;">
-
-            <div class="compass-loader"><i class="fa-regular fa-compass"></i></div>
-
-            <h3 id="loadingText">קורא את המפה...</h3>
-
-        </div>
-
-
-
-        <!-- Step 5: Learn -->
-
-        <div id="step-learn" class="hidden">
-
-            <div style="display:flex; justify-content:space-between; margin-bottom:15px; opacity:0.7; font-size:0.9rem;">
-
-                <span id="stageIndicator">תחנה 1 מתוך 5</span>
-
-                <span id="userTitle">החוקר</span>
-
-            </div>
-
-            <div id="learnContent" class="content-box"></div>
-
-            
-
-            <div id="questionArea" class="hidden">
-
-                <input type="text" id="inpAnswer" placeholder="הכנס את התשובה..." autocomplete="off">
-
-                <div style="display:grid; grid-template-columns: 2fr 1fr; gap: 10px;">
-
-                    <button class="btn btn-success" onclick="checkAnswer()">בדוק <i class="fa-solid fa-check"></i></button>
-
-                    <button class="btn btn-secondary" onclick="showHint()">רמז <i class="fa-solid fa-magnifying-glass"></i></button>
-
-                </div>
-
-            </div>
-
-
-
-            <div id="explanationArea">
-
-                <button class="btn btn-primary" onclick="nextStage()">המשך במסע <i class="fa-solid fa-arrow-left"></i></button>
-
-            </div>
-
-            <div id="feedbackArea"></div>
-
-        </div>
-
-
-
-        <!-- Step 6: Finish -->
-
-        <div id="step-finish" class="hidden" style="text-align: center; padding-top: 20px;">
-
-            <i class="fa-solid fa-gem" style="font-size: 5rem; color: var(--accent); margin-bottom: 20px; animation: bounce 2s infinite;"></i>
-
-            <h1>מצאת את האוצר!</h1>
-
-            <p class="subtitle" id="finishText">כל הכבוד!</p>
-
-            <button class="btn btn-primary" onclick="location.reload()">הרפתקה חדשה</button>
-
-        </div>
-
+    <!-- 1. PARALLAX BACKGROUND -->
+    <div class="scene" id="scene">
+        <div class="layer layer-bg" data-speed="0.2"></div>
+        <div class="layer layer-particles" data-speed="0.5"></div>
+        <div class="layer layer-mid" data-speed="0.8"></div>
     </div>
 
+    <!-- 2. LOBBY UI -->
+    <div class="app-ui" id="lobbyUI">
+        
+        <!-- HUD -->
+        <div class="hud">
+            <div class="hud-level">
+                <div class="level-badge" id="uiLevel">1</div>
+                <div>
+                    <div style="font-size: 0.7rem; opacity: 0.8;">דרגה</div>
+                    <div class="xp-bar-container"><div class="xp-bar-fill" id="uiXpBar" style="width: 0%"></div></div>
+                </div>
+            </div>
+            <div class="hud-streak">
+                <i class="fa-solid fa-fire"></i> <span id="uiStreak">0</span> ימים
+            </div>
+        </div>
 
+        <!-- HERO -->
+        <div class="hero-section">
+            <div class="hero-avatar">
+                <img src="https://i.imgur.com/58QMFtb.png" alt="Captain">
+            </div>
+            <div class="hero-greeting">
+                <h2 id="uiName">שלום קפטן!</h2>
+                <p>מרכז הפיקוד מוכן להוראות.</p>
+            </div>
+        </div>
+
+        <!-- ACTION DECK -->
+        <div class="action-deck">
+            
+            <!-- Daily Mission -->
+            <div class="card-btn primary" onclick="startDailyMission()">
+                <div class="icon-box" style="color: #F59E0B;"><i class="fa-solid fa-star"></i></div>
+                <div class="card-info">
+                    <h3>משימה יומית</h3>
+                    <p>זכה ב-100 נקודות XP!</p>
+                </div>
+                <i class="fa-solid fa-chevron-left" style="margin-right: auto; opacity: 0.5;"></i>
+            </div>
+
+            <!-- Map / Topics -->
+            <div class="card-btn" onclick="openMap()">
+                <div class="icon-box" style="color: #34D399;"><i class="fa-solid fa-map"></i></div>
+                <div class="card-info">
+                    <h3>מפת העולם</h3>
+                    <p>בחר נושא לחקירה</p>
+                </div>
+            </div>
+
+            <!-- Profile / Setup (First Time) -->
+            <div class="card-btn" id="setupBtn" onclick="openSetup()">
+                <div class="icon-box" style="color: #60A5FA;"><i class="fa-solid fa-user-gear"></i></div>
+                <div class="card-info">
+                    <h3>הגדרות קפטן</h3>
+                    <p>שנה שם ותחומי עניין</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 3. SCREENS (Overlay) -->
+    
+    <!-- Setup Screen -->
+    <div id="screen-setup" class="screen">
+        <div class="screen-header">
+            <button class="back-btn" onclick="closeScreen('screen-setup')"><i class="fa-solid fa-xmark"></i></button>
+            <h2>הגדרת פרופיל</h2>
+        </div>
+        <input type="text" id="inpName" placeholder="שם הקפטן...">
+        <textarea id="inpInterests" rows="3" placeholder="תחומי עניין (מיינקראפט, חלל...)"></textarea>
+        <div class="grid-topics" style="margin-top: 20px;">
+            <div class="topic-card" onclick="setGender('boy')">👦 קפטן</div>
+            <div class="topic-card" onclick="setGender('girl')">👧 קפטנית</div>
+        </div>
+        <button class="btn-action btn-green" onclick="saveProfile()" style="margin-top: auto;">שמור וצא לדרך</button>
+    </div>
+
+    <!-- Map Screen -->
+    <div id="screen-map" class="screen">
+        <div class="screen-header">
+            <button class="back-btn" onclick="closeScreen('screen-map')"><i class="fa-solid fa-arrow-right"></i></button>
+            <h2>מפת העולם</h2>
+        </div>
+        <p style="opacity: 0.7; margin-bottom: 20px;">בחר אזור לחקירה:</p>
+        <div class="grid-topics" id="topicsGrid">
+            <!-- Populated by JS -->
+        </div>
+    </div>
+
+    <!-- Learning Screen -->
+    <div id="screen-learn" class="screen">
+        <div class="screen-header">
+            <button class="back-btn" onclick="closeScreen('screen-learn')"><i class="fa-solid fa-xmark"></i></button>
+            <h3 id="learnTitle">משימה</h3>
+        </div>
+        
+        <div id="learnContent" class="content-box">Loading...</div>
+        
+        <div id="questionArea" class="hidden">
+            <input type="text" id="inpAnswer" placeholder="התשובה שלך..." autocomplete="off">
+            <div style="display:flex; gap:10px;">
+                <button class="btn-action btn-green" onclick="checkAnswer()">בדוק</button>
+                <button class="btn-action btn-gold" onclick="showHint()" style="width: 30%"><i class="fa-regular fa-lightbulb"></i></button>
+            </div>
+        </div>
+
+        <button id="nextBtn" class="btn-action btn-green hidden" onclick="nextStage()">המשך</button>
+        <div id="feedbackArea" style="margin-top: 15px; text-align: center;"></div>
+    </div>
 
     <script>
-
-        let user = { name: '', gender: 'boy', grade: '', interests: '', topic: '', stage: 1 };
-
+        // --- GAME STATE ---
+        let state = {
+            name: 'אורח', gender: 'boy', interests: 'הרפתקאות',
+            xp: 0, level: 1, streak: 1,
+            topic: '', stage: 1
+        };
         let currentData = null;
 
-
-
-        function showStep(id) {
-
-            document.querySelectorAll('.app-container > div:not(.avatar-container)').forEach(d => d.classList.add('hidden'));
-
-            document.getElementById(id).classList.remove('hidden');
-
-            document.getElementById(id).classList.add('fade-in');
-
-        }
-
-
-
-        function setGender(g) {
-
-            user.gender = g;
-
-            document.querySelectorAll('.select-card').forEach(c => c.classList.remove('selected'));
-
-            document.getElementById(g === 'boy' ? 'btnBoy' : 'btnGirl').classList.add('selected');
-
-        }
-
-
-
-        function goToGrade() {
-
-            user.name = document.getElementById('inpName').value || 'חוקר';
-
-            user.interests = document.getElementById('inpInterests').value || 'הרפתקאות';
-
-            document.getElementById('userTitle').innerText = user.gender === 'girl' ? 'החוקרת ' + user.name : 'החוקר ' + user.name;
-
-            showStep('step-grade');
-
-        }
-
-
-
-        function setGrade(g) {
-
-            user.grade = g;
-
-            const topics = {
-
-                '1-2': ['חיבור', 'חיסור', 'צורות'],
-
-                '3-4': ['כפל', 'חילוק', 'שברים'],
-
-                '5-6': ['אחוזים', 'שברים עשרוניים', 'חזקות']
-
-            };
-
-            const grid = document.getElementById('topicsGrid');
-
-            grid.innerHTML = '';
-
-            topics[g].forEach(t => {
-
-                grid.innerHTML += `<div class="select-card" onclick="startTopic('${t}')"><i class="fa-solid fa-map-location-dot"></i> ${t}</div>`;
-
-            });
-
-            showStep('step-topic');
-
-        }
-
-
-
-        function startTopic(t) {
-
-            user.topic = t;
-
-            user.stage = 1;
-
-            fetchContent();
-
-        }
-
-
-
-        async function fetchContent() {
-
-            showStep('step-loading');
-
-            document.getElementById('loadingText').innerText = `חוקר את תחנה ${user.stage}...`;
-
-
-
-            try {
-
-                const res = await fetch('/api/explain', {
-
-                    method: 'POST',
-
-                    headers: { 'Content-Type': 'application/json' },
-
-                    body: JSON.stringify(user)
-
-                });
-
-                const data = await res.json();
-
-                currentData = data;
-
-                renderLearning(data);
-
-            } catch (e) {
-
-                console.error(e);
-
-                renderLearning({ content: "המצפן השתגע! בוא ננסה שוב.", isQuestion: false, visual: "🧭", nextButtonText: "נסה שוב" });
-
-            }
-
-        }
-
-
-
-        function renderLearning(data) {
-
-            showStep('step-learn');
-
-            document.getElementById('stageIndicator').innerText = `תחנה ${user.stage} מתוך 5`;
-
+        // --- INIT ---
+        window.addEventListener('DOMContentLoaded', () => {
+            loadState();
+            updateHUD();
             
-
-            let badgeText = "הסבר";
-
-            if(user.stage === 1) badgeText = "הסיפור";
-
-            if(user.stage === 3) badgeText = "הטריק הסודי";
-
-            if(user.stage >= 4) badgeText = "אתגר";
-
-
-
-            let html = `<div class="stage-badge">${badgeText}</div>`;
-
-            html += `<p>${data.content}</p>`;
-
-            if (data.visual) { html += `<div class="visual-area">${data.visual}</div>`; }
-
-            document.getElementById('learnContent').innerHTML = html;
-
-
-
-            if (window.renderMathInElement) {
-
-                window.renderMathInElement(document.getElementById('learnContent'), {
-
-                    delimiters: [{left:"$$", right:"$$", display:true}, {left:"$", right:"$", display:false}]
-
-                });
-
+            // Check if first time
+            if (state.name === 'אורח') {
+                setTimeout(() => openSetup(), 500);
             }
 
+            // Parallax Effect
+            document.addEventListener('mousemove', (e) => {
+                const x = (window.innerWidth - e.pageX) / 50;
+                const y = (window.innerHeight - e.pageY) / 50;
+                
+                document.querySelectorAll('.layer').forEach(layer => {
+                    const speed = layer.getAttribute('data-speed');
+                    layer.style.transform = `translateX(${x * speed}px) translateY(${y * speed}px)`;
+                });
+            });
+        });
 
+        function loadState() {
+            const saved = localStorage.getItem('captainState');
+            if (saved) state = { ...state, ...JSON.parse(saved) };
+        }
 
-            document.getElementById('inpAnswer').value = '';
+        function saveState() {
+            localStorage.setItem('captainState', JSON.stringify(state));
+            updateHUD();
+        }
 
+        function updateHUD() {
+            document.getElementById('uiLevel').innerText = state.level;
+            document.getElementById('uiStreak').innerText = state.streak;
+            document.getElementById('uiName').innerText = `שלום ${state.gender === 'girl' ? 'קפטנית' : 'קפטן'} ${state.name}!`;
+            
+            // XP Logic (Simple: 100 XP per level)
+            const xpPercent = (state.xp % 100);
+            document.getElementById('uiXpBar').style.width = xpPercent + '%';
+        }
+
+        // --- NAVIGATION ---
+        function openScreen(id) { document.getElementById(id).classList.add('active'); }
+        function closeScreen(id) { document.getElementById(id).classList.remove('active'); }
+
+        function openSetup() {
+            document.getElementById('inpName').value = state.name !== 'אורח' ? state.name : '';
+            document.getElementById('inpInterests').value = state.interests;
+            openScreen('screen-setup');
+        }
+
+        function saveProfile() {
+            const name = document.getElementById('inpName').value;
+            const interests = document.getElementById('inpInterests').value;
+            if(name) state.name = name;
+            if(interests) state.interests = interests;
+            saveState();
+            closeScreen('screen-setup');
+        }
+
+        function setGender(g) { state.gender = g; }
+
+        function openMap() {
+            const topics = ['חיבור', 'חיסור', 'כפל', 'חילוק', 'שברים', 'אחוזים', 'חזקות', 'גיאומטריה'];
+            const grid = document.getElementById('topicsGrid');
+            grid.innerHTML = topics.map(t => 
+                `<div class="topic-card" onclick="startTopic('${t}')">${t}</div>`
+            ).join('');
+            openScreen('screen-map');
+        }
+
+        function startDailyMission() {
+            const topics = ['שברים', 'כפל', 'אחוזים'];
+            const randomTopic = topics[Math.floor(Math.random() * topics.length)];
+            startTopic(randomTopic);
+        }
+
+        function startTopic(topic) {
+            state.topic = topic;
+            state.stage = 1;
+            closeScreen('screen-map');
+            openScreen('screen-learn');
+            fetchContent();
+        }
+
+        // --- LEARNING LOGIC ---
+        async function fetchContent() {
+            document.getElementById('learnContent').innerHTML = '<div class="compass-loader" style="text-align:center; font-size:3rem; animation:spin 2s infinite;">🧭</div><p style="text-align:center">קורא מפה...</p>';
+            document.getElementById('questionArea').classList.add('hidden');
+            document.getElementById('nextBtn').classList.add('hidden');
             document.getElementById('feedbackArea').innerHTML = '';
 
+            try {
+                const res = await fetch('/api/explain', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(state)
+                });
+                const data = await res.json();
+                currentData = data;
+                renderContent(data);
+            } catch (e) {
+                renderContent({ content: "שגיאת תקשורת. נסה שוב.", visual: "⚠️", nextButtonText: "נסה שוב" });
+            }
+        }
 
+        function renderContent(data) {
+            let html = `<p>${data.content}</p>`;
+            if (data.visual) { html += `<div class="visual-area">${data.visual}</div>`; }
+            
+            document.getElementById('learnContent').innerHTML = html;
+            document.getElementById('learnTitle').innerText = `שלב ${state.stage}: ${state.topic}`;
+
+            if (window.renderMathInElement) {
+                window.renderMathInElement(document.getElementById('learnContent'), {
+                    delimiters: [{left:"$$", right:"$$", display:true}, {left:"$", right:"$", display:false}]
+                });
+            }
 
             if (data.isQuestion) {
-
                 document.getElementById('questionArea').classList.remove('hidden');
-
-                document.getElementById('explanationArea').classList.add('hidden');
-
+                document.getElementById('inpAnswer').value = '';
+                document.getElementById('inpAnswer').focus();
             } else {
-
-                document.getElementById('questionArea').classList.add('hidden');
-
-                document.getElementById('explanationArea').classList.remove('hidden');
-
-                document.querySelector('#explanationArea button').innerHTML = (data.nextButtonText || 'המשך במסע') + ' <i class="fa-solid fa-arrow-left"></i>';
-
+                const btn = document.getElementById('nextBtn');
+                btn.innerText = data.nextButtonText || 'המשך';
+                btn.classList.remove('hidden');
             }
-
         }
-
-
 
         function checkAnswer() {
-
             const val = document.getElementById('inpAnswer').value.trim();
-
             const correct = currentData.correctAnswer;
-
             const fb = document.getElementById('feedbackArea');
 
-
-
             if (val == correct || val.toLowerCase() == correct.toString().toLowerCase()) {
-
-                fb.innerHTML = `<div class="fb-msg fb-success">🎉 מצוין! הקוד פוצח!</div>`;
-
+                fb.innerHTML = '<span style="color:#10B981; font-size:1.5rem;">🎉 מעולה!</span>';
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                
+                // XP Gain
+                state.xp += 20;
+                if (state.xp % 100 === 0) state.level++;
+                saveState();
+                
                 setTimeout(nextStage, 1500);
-
             } else {
-
-                fb.innerHTML = `<div class="fb-msg fb-error">❌ לא בדיוק... נסה שוב!</div>`;
-
+                fb.innerHTML = '<span style="color:#EF4444;">❌ נסה שוב...</span>';
+                document.getElementById('inpAnswer').classList.add('shake');
+                setTimeout(()=>document.getElementById('inpAnswer').classList.remove('shake'), 500);
             }
-
         }
-
-
 
         function showHint() {
-
-            const hint = currentData.hint || 'נסה להיזכר בטריק הסודי...';
-
-            document.getElementById('feedbackArea').innerHTML = `<div class="fb-msg" style="background:rgba(245, 158, 11, 0.2); color:#FCD34D;">💡 ${hint}</div>`;
-
+            document.getElementById('feedbackArea').innerHTML = `<span style="color:#F59E0B;">💡 ${currentData.hint || 'נסה לחשוב שוב'}</span>`;
         }
-
-
 
         function nextStage() {
-
-            if (user.stage < 5) { user.stage++; fetchContent(); } 
-
-            else { showStep('step-finish'); createConfetti(); }
-
+            if (state.stage < 5) {
+                state.stage++;
+                fetchContent();
+            } else {
+                state.xp += 50; // Bonus for finishing
+                saveState();
+                alert("כל הכבוד קפטן! המשימה הושלמה. זכית ב-50 נקודות!");
+                closeScreen('screen-learn');
+                updateHUD();
+            }
         }
-
-
-
-        function createConfetti() {
-
-             var duration = 3 * 1000;
-
-             var animationEnd = Date.now() + duration;
-
-             var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
-
-             var interval = setInterval(function() {
-
-               var timeLeft = animationEnd - Date.now();
-
-               if (timeLeft <= 0) { return clearInterval(interval); }
-
-               var particleCount = 50 * (timeLeft / duration);
-
-               confetti(Object.assign({}, defaults, { particleCount, origin: { x: Math.random(), y: Math.random() - 0.2 } }));
-
-             }, 250);
-
-        }
-
-        
-
-        const script = document.createElement('script');
-
-        script.src = "https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js";
-
-        document.head.appendChild(script);
-
     </script>
-
 </body>
-
 </html>
