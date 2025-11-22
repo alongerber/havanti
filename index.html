@@ -286,9 +286,35 @@
 
         .visual-area {
 
-            font-size: 3rem; text-align: center; margin: 20px 0;
+            text-align: center; 
+            margin: 20px 0;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 16px;
+            animation: fadeIn 0.5s ease;
 
+        }
+
+        .visual-area svg {
+
+            max-width: 100%;
+            height: auto;
+            max-height: 300px;
+            width: auto;
+            display: block;
+            margin: 0 auto;
             animation: bounce 2s infinite;
+
+        }
+
+        .visual-area:has(svg) {
+
+            background: rgba(15, 118, 110, 0.1);
+            border: 2px solid rgba(20, 184, 166, 0.2);
 
         }
 
